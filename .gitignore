@@ -2,6 +2,7 @@
 venv/
 .env/
 *.env/
+.env
 
 # Python
 __pycache__/
@@ -19,7 +20,7 @@ __pycache__/
 *.sqlite3
 *.db
 
-# Migrations (по желанию)
+# Migrations 
 migrations/__pycache__/
 
 # OS
