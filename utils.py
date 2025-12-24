@@ -1,0 +1,75 @@
+from datetime import datetime, timedelta, timezone
+import bcrypt
+from fastapi import HTTPException
+import os
+import jwt 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+def hash_password(password: str) -> str:
+    if len(password.encode('utf-8')) > 72:
+        raise HTTPException(
+            status_code=400,
+            detail="Password is too long"
+        )
+
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(
+        password.encode('utf-8'), salt).decode('utf-8')
+    return hashed_password
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+
+def create_token(data: dict, expires_delta: timedelta):
+    expire = datetime.now(timezone.utc) + expires_delta
+
+    payload = data.copy()
+    payload["exp"] = int(expire.timestamp())
+
+    token = jwt.encode(
+        payload,
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    return token
+
+
+def create_access_token(sub: str):
+    return create_token({"sub": sub}, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+
+def create_refresh_token(sub: str):
+    return create_token({"sub": sub, "type": "refresh"}, timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+
+
+def verify_token(token: str):
+    print("\n====================")
+    print("RAW TOKEN RECEIVED:", repr(token))
+    print("====================")
+
+    try:
+        claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        exp_ts = claims.get("exp")
+        print("EXPIRATION:", datetime.utcfromtimestamp(exp_ts))
+        print("NOW:", datetime.utcnow())
+        return claims
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except Exception as e:
+        print("JWT ERROR:", repr(e))
+        raise HTTPException(status_code=401, detail="Invalid token") 
+        
+        
+def decode_token(token: str):
+    try:
+        return verify_token(token)
+    except HTTPException as e:
+        return {"detail": e.detail}
