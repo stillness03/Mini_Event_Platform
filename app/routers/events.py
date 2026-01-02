@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy.orm import Session
@@ -14,23 +14,27 @@ router = APIRouter(prefix='/events', tags=['events'])
 
 
 def check_create_event_permission(
-        db: Session, 
-        current_user_id: int, 
-        time_frame: timedelta, 
-        max_events: int):
-    
-    time_limit = datetime.utcnow() - time_frame
+    time_frame: timedelta,
+    max_events: int
+):
+    def dependency(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_user_from_token),
+    ):
+        time_limit = datetime.now(timezone.utc) - time_frame
 
-    event_count = db.query(Event).filter(
-        Event.owner_id == current_user_id,
-        Event.created_at >= time_limit
-    ).count()
+        event_count = db.query(Event).filter(
+            Event.owner_id == current_user.id,
+            Event.created_at >= time_limit
+        ).count()
 
-    if event_count >= max_events:
-        raise HTTPException(
-            status_code=400,
-            detail="You have reached the maximum number of events you can create in this time period."
-        )
+        if event_count >= max_events:
+            raise HTTPException(
+                status_code=400,
+                detail="You have reached the maximum number of events you can create in this time period."
+            )
+    return dependency
+
     
 
 @router.post("/create-admin_event", response_model=EventResponse)
@@ -55,19 +59,21 @@ async def create_events(
 
     return new_event
 
-@router.post("/create-event", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
-async def create_event(event_model: EventCreate,
-                          db: Session = Depends(get_db),
-                          current_user: User = Depends(get_user_from_token),
-                          dependencies=[Depends(check_create_event_permission)]):
-    
-    check_create_event_permission(
-        db=db,
-        current_user_id=current_user.id,
+
+@router.post(
+    "/create-event",
+    response_model=EventResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_create_event_permission(
         time_frame=timedelta(minutes=1),
         max_events=5
-    )
-
+    ))]
+)
+async def create_event(
+    event_model: EventCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_user_from_token),
+):
     new_event = Event(
         title=event_model.title,
         description=event_model.description,
@@ -78,6 +84,7 @@ async def create_event(event_model: EventCreate,
     db.refresh(new_event)
 
     return new_event
+
 
 @router.get("/my-events", response_model=list[EventResponse])
 async def get_my_events(

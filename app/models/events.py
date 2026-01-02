@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 
 
 class Event(Base):
@@ -11,7 +11,7 @@ class Event(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.now(UTC))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship(
@@ -31,7 +31,7 @@ class Subscription(Base):
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(Integer, ForeignKey("events.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
-    subscript_at = Column(DateTime, default=datetime.now(UTC))
+    subscript_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     event = relationship(
         lambda: Event,

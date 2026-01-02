@@ -16,26 +16,34 @@ async def test_read_events():
 
 
 @pytest.mark.asyncio
-async def test_create_event(test_user):
+async def test_create_event(auth_async_client, test_user):
     assert test_user.id is not None
 
     event_data = {
         "title": "Test Event",
         "description": "This is a test event",
-        "owner_id": test_user.id
     }
 
+    response = await auth_async_client.post(
+        "/events/create-event",
+        json=event_data
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+    assert data["title"] == "Test Event"
+    assert data["owner_id"] == test_user.id
+
+
+@pytest.mark.asyncio
+async def test_get_all_events():
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test"
     ) as ac:
-        response = await ac.post(
-            "/events/create-event",
-            json=event_data
-        )
+        response = await ac.get("/events/all-events")
 
-    assert response.status_code == 201
-    data = response.json()
-    assert data["title"] == "Test Event"
-    assert data["owner_id"] == test_user.id
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
 

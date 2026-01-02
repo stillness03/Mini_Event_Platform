@@ -1,69 +1,91 @@
 import pytest
+import pytest_asyncio
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from fastapi.testclient import TestClient
+from faker import Faker
+from httpx import AsyncClient, ASGITransport
 
 from database import Base, get_db
 from main import app
 from app.models.users import User
+from app.routers.users import get_user_from_token
 
-from faker import Faker
 
 fake = Faker()
 
-# Фикстура engine
-@pytest.fixture(scope="session")
-def engine():
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
+
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def create_test_db():
     Base.metadata.create_all(bind=engine)
-    yield engine
+    yield
     Base.metadata.drop_all(bind=engine)
 
-# Фикстура сессии БД
-@pytest.fixture(scope="function")
-def db(engine):
-    TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+@pytest.fixture()
+def db():
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
 
-# Переопределяем Depends get_db
-@pytest.fixture(autouse=True)
-def override_get_db(db):
-    def _override():
+
+@pytest.fixture()
+def client(db):
+    def override_get_db():
         yield db
-    app.dependency_overrides[get_db] = _override
-    yield
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    with TestClient(app) as c:
+        yield c
+
     app.dependency_overrides.clear()
 
-# Фейковый пользователь
-@pytest.fixture(scope="session")
-def test_user(engine):
-    TestingSessionLocal = sessionmaker(bind=engine)
-    db_session = TestingSessionLocal()
 
+@pytest.fixture()
+def test_user(db):
     user = User(
         username=fake.user_name(),
         email=fake.email(),
         hashed_password="hashed_password",
         auth_role="user"
     )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     yield user
-    db_session.close()
+    db.delete(user)
+    db.commit()
 
-# Переопределяем get_current_user
-from app.routers.users import get_current_user
 
-@pytest.fixture(autouse=True, scope="session")
-def override_get_current_user(test_user):
-    async def _override():
-        return test_user  # возвращаем объект пользователя
-    app.dependency_overrides[get_current_user] = _override
-    yield
+@pytest_asyncio.fixture
+async def auth_async_client(test_user):
+    def override_get_user_from_token():
+        return test_user
+
+    app.dependency_overrides[get_user_from_token] = override_get_user_from_token
+
+    
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        yield client
+
     app.dependency_overrides.clear()
