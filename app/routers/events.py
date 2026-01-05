@@ -94,7 +94,7 @@ async def get_my_events(
     events = db.query(Event).filter(Event.owner_id == current_user.id).all()
     return events
 
-@router.post("subscribe/{event_id}", status_code=status.HTTP_201_CREATED)
+@router.post("/subscribe/{event_id}", status_code=status.HTTP_201_CREATED)
 async def subscribe_to_event(
     event_id: int,
     db: Session = Depends(get_db),
@@ -134,8 +134,15 @@ async def get_my_subscriptions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_user_from_token)
 ):
-    subscriptions = db.query(Subscription).filter(Subscription.user_id == current_user.id).all()
-    events = [db.query(Event).filter(Event.id == sub.event_id).first() for sub in subscriptions]
+    events = (
+    db.query(Event)
+    .join(Subscription, Subscription.event_id == Event.id)
+    .filter(
+        Subscription.user_id == current_user.id,
+        Event.owner_id != current_user.id  # Exclude events owned by the user
+    )
+    .all()
+    )
     return events
 
 @router.post("/unsubscribe/{event_id}", status_code=status.HTTP_200_OK)
