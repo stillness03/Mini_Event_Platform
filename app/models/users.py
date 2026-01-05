@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 class User(Base):
@@ -12,7 +12,7 @@ class User(Base):
     email = Column(String, unique=True)
     hashed_password = Column(String)
     auth_role = Column(String, default="user")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(UTC))
 
     events = relationship(
         lambda: Event,
