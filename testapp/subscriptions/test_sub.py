@@ -1,7 +1,4 @@
 import pytest 
-from httpx import AsyncClient, ASGITransport
-
-from main import app
 
 @pytest.mark.asyncio
 async def test_subscribe_to_event(make_auth_client, test_user, test_user_2):

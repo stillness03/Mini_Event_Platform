@@ -2,11 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
-
 from sqlalchemy.orm import Session
-from database import get_db
 
-from utils import verify_token
+from app.core.database import get_db
+from app.core.config import verify_token
+
 from app.models.users import User
 from app.schemas.users import UserResponse
 

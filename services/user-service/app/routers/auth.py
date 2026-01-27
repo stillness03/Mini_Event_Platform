@@ -1,13 +1,13 @@
-import os
 from fastapi import Depends, HTTPException, status, APIRouter, Body
 from sqlalchemy.orm import Session
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 
 
-from database import get_db
+from app.core.database import get_db
 from app.models.users import User
 from app.schemas.users import LoginRequest, UserCreate, AuthResponse, UserResponse
-from utils import create_access_token, create_refresh_token, hash_password, verify_password
+from app.core.config import create_access_token, create_refresh_token
+from app.core.security import hash_password, verify_password
 
 
 router = APIRouter(prefix='/auth', tags=['auth'])

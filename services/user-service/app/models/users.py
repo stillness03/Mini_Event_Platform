@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
-from database import Base
+from app.core.database import Base
 from datetime import UTC, datetime
 
 
@@ -13,15 +12,3 @@ class User(Base):
     hashed_password = Column(String)
     auth_role = Column(String, default="user")
     created_at = Column(DateTime, default=datetime.now(UTC))
-
-    events = relationship(
-        lambda: Event,
-        back_populates="owner"
-    )
-
-    subscriptions = relationship(
-        lambda: Subscription,
-        back_populates="user"
-    )
-
-from app.models.events import Event, Subscription

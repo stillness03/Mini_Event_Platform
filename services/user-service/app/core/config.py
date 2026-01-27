@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-import bcrypt
+from datetime import UTC, datetime, timedelta, timezone
 from fastapi import HTTPException
 import os
 import jwt 
@@ -11,21 +10,6 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-def hash_password(password: str) -> str:
-    if len(password.encode('utf-8')) > 72:
-        raise HTTPException(
-            status_code=400,
-            detail="Password is too long"
-        )
-
-    salt = bcrypt.gensalt()
-    hashed_password = bcrypt.hashpw(
-        password.encode('utf-8'), salt).decode('utf-8')
-    return hashed_password
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def create_token(data: dict, expires_delta: timedelta):
@@ -58,8 +42,8 @@ def verify_token(token: str):
     try:
         claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         exp_ts = claims.get("exp")
-        print("EXPIRATION:", datetime.utcfromtimestamp(exp_ts))
-        print("NOW:", datetime.utcnow())
+        print("EXPIRATION:", datetime.fromtimestamp(exp_ts, tz=UTC))
+        print("NOW:", datetime.now(UTC))
         return claims
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
