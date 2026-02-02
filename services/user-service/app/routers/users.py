@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from datetime import datetime
+from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -42,14 +42,13 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer_scheme
 
 @routers.get("/me", response_model=UserResponse)
 def get_current_user_endpoint(current_user: User = Depends(get_current_user)):
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 @routers.get("/get-current-user", response_model=UserResponse)
 def get_current_user_endpoint(current_user: User = Depends(get_user_from_token)):
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
-def get_user_role(current_user: User = Depends(get_user_from_token)) -> str:
-    return current_user.auth_role
+
 
 @routers.get("/test-user", response_model=UserResponse)
 def test_user():
@@ -58,5 +57,5 @@ def test_user():
         username="testuser",
         email="test@gmail.com",
         auth_role="user",
-        created_at=datetime.utcnow()
+        created_at=datetime.now(UTC)
     )
