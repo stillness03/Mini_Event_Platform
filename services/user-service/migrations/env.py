@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from app.core.database import Base
 
 import os
 from dotenv import load_dotenv
@@ -14,8 +15,6 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
-
-from app.core.database import Base
 
 config = context.config
 

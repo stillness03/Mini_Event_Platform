@@ -1,4 +1,3 @@
-import time
 from datetime import time
 from fastapi import FastAPI, Depends, Request
 from sqlalchemy.orm import Session
