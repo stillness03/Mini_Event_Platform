@@ -51,8 +51,12 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         run: alembic upgrade head
 
-      - name: Run tests
+      - name: Set PYTHONPATH for user-service
+        run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/services/user-service" >> $GITHUB_ENV
+
+      - name: Run tests (user-service)
         working-directory: services/user-service
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         run: pytest
+
