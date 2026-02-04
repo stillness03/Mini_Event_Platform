@@ -4,11 +4,16 @@ import os
 import jwt
 from dotenv import load_dotenv
 
+from app.core.security import get_env_int
+
 load_dotenv()
+
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+ACCESS_TOKEN_EXPIRE_MINUTES = get_env_int(
+    "ACCESS_TOKEN_EXPIRE_MINUTES", 30
+)
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
