@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.events import EventCreate, EventResponse, EventUpdate, UserContext
 from app.repositories.event import EventRepository
 from app.core.security import event_creation_rate_limit, get_event_repo, get_current_user
-from app.core.policies.event import EventPolicy
 
 router = APIRouter(prefix="/events", tags=["Events"])
 

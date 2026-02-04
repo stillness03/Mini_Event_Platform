@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-import sys 
+import sys
 from pathlib import Path
 
 from sqlalchemy import engine_from_config, pool
@@ -16,7 +16,6 @@ sys.path.append(str(BASE_DIR))
 
 
 from app.core.database import Base
-from app.models.users import User
 
 config = context.config
 
@@ -58,7 +57,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
         )

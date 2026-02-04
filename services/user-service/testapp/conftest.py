@@ -95,7 +95,7 @@ async def auth_async_client(test_user):
 
     app.dependency_overrides[get_user_from_token] = override_get_user_from_token
 
-    
+
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test"

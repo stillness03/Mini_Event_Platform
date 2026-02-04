@@ -28,11 +28,11 @@ class UserValidator:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register_user(data_user: UserCreate, db: Session = Depends(get_db), 
+def register_user(data_user: UserCreate, db: Session = Depends(get_db),
                   validator: UserValidator = Depends()):
 
     validator.validate_user_create(data_user)
-   
+
     hashed_pwd = hash_password(data_user.password)
     new_user = User(
         username=data_user.username,
@@ -55,10 +55,10 @@ def register_user(data_user: UserCreate, db: Session = Depends(get_db),
 
 @router.post("/login", response_model=AuthResponse)
 def login_user(
-    data: LoginRequest = Body(...), 
+    data: LoginRequest = Body(...),
     db: Session = Depends(get_db)
 ):
-    
+
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid credentials")

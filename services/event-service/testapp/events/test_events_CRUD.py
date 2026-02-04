@@ -12,7 +12,7 @@ async def test_event_rate_limit(async_client):
         response = await async_client.post("/events", json={"title": f"Event {i}", "description": "Desc"})
         assert response.status_code == 201
 
-  
+
     response = await async_client.post("/events", json={"title": "Event 6", "description": "Desc"})
     assert response.status_code == 429
 

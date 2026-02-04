@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta, timezone
 from fastapi import HTTPException
 import os
-import jwt 
+import jwt
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -49,9 +49,9 @@ def verify_token(token: str):
         raise HTTPException(status_code=401, detail="Token expired")
     except Exception as e:
         print("JWT ERROR:", repr(e))
-        raise HTTPException(status_code=401, detail="Invalid token") 
-        
-        
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
 def decode_token(token: str):
     try:
         return verify_token(token)

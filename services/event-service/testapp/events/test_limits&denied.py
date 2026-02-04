@@ -9,14 +9,14 @@ async def test_create_and_get_event(event_repo):
     owner_id = str(ObjectId())
     event_in = EventCreate(title="Test Event", description="Test Description")
 
-    
+
     event = await event_repo.create_event(event_in, owner_id)
     assert event.title == "Test Event"
     assert event.description == "Test Description"
     assert event.owner_id == owner_id
     assert event.id is not None
 
-    
+
     fetched = await event_repo.get_event_by_id(event.id)
     assert fetched is not None
     assert fetched.title == "Test Event"
