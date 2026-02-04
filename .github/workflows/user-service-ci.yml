@@ -55,4 +55,4 @@ jobs:
         working-directory: services/user-service
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-        run: pytest testapp
+        run: pytest
