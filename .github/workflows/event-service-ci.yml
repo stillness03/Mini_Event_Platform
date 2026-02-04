@@ -47,6 +47,7 @@ jobs:
       - name: Run tests (event-service)
         working-directory: services/event-service
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+            MONGO_URI: mongodb://localhost:27017
+            DB_NAME: test_db
         run: pytest
 
