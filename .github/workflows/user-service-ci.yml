@@ -49,7 +49,7 @@ jobs:
         working-directory: services/user-service
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-        run: alembic -c alembic.ini upgrade head
+        run: alembic upgrade head
 
       - name: Set PYTHONPATH for user-service
         run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/services/user-service" >> $GITHUB_ENV
