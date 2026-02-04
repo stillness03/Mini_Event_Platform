@@ -33,6 +33,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Debug files 
+        run: ls -R
+
       - name: Install dependencies
         working-directory: services/event-service
         run: |
