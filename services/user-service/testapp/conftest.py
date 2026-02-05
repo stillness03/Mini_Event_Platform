@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 from faker import Faker
 from httpx import AsyncClient, ASGITransport
 
-from database import Base, get_db
-from main import app
+from app.core.database import Base, get_db
+from app.main import app
 from app.models.users import User
 from app.routers.users import get_user_from_token
 
@@ -95,7 +95,7 @@ async def auth_async_client(test_user):
 
     app.dependency_overrides[get_user_from_token] = override_get_user_from_token
 
-    
+
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test"

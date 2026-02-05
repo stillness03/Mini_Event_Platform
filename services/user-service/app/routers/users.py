@@ -41,11 +41,11 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer_scheme
 
 
 @routers.get("/me", response_model=UserResponse)
-def get_current_user_endpoint(current_user: User = Depends(get_current_user)):
+def get_current_user(current_user: User = Depends(get_current_user)):
     return UserResponse.model_validate(current_user)
 
 @routers.get("/get-current-user", response_model=UserResponse)
-def get_current_user_endpoint(current_user: User = Depends(get_user_from_token)):
+def get_current_user_by_token(current_user: User = Depends(get_user_from_token)):
     return UserResponse.model_validate(current_user)
 
 

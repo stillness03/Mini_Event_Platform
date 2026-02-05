@@ -1,14 +1,19 @@
 from datetime import UTC, datetime, timedelta, timezone
 from fastapi import HTTPException
 import os
-import jwt 
+import jwt
 from dotenv import load_dotenv
+
+from app.core.security import get_env_int
 
 load_dotenv()
 
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+ACCESS_TOKEN_EXPIRE_MINUTES = get_env_int(
+    "ACCESS_TOKEN_EXPIRE_MINUTES", 30
+)
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
@@ -49,9 +54,9 @@ def verify_token(token: str):
         raise HTTPException(status_code=401, detail="Token expired")
     except Exception as e:
         print("JWT ERROR:", repr(e))
-        raise HTTPException(status_code=401, detail="Invalid token") 
-        
-        
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
 def decode_token(token: str):
     try:
         return verify_token(token)

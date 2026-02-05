@@ -1,7 +1,6 @@
 from bson import ObjectId
 from datetime import datetime, timezone
 
-from pymongo import ReturnDocument
 
 from app.repositories.base import BaseRepository
 from app.schemas.events import EventCreate, EventResponse, EventUpdate, UserContext
@@ -26,7 +25,7 @@ class EventRepository(BaseRepository):
         event_data["_id"] = result.inserted_id
 
         return self._to_response(event_data)
-    
+
 
     async def count_created_after(self, owner_id: str, after: datetime) -> int:
         return await self.collection.count_documents({
@@ -55,7 +54,7 @@ class EventRepository(BaseRepository):
                  .limit(limit)
             )
         return [self._to_response(doc) async for doc in cursor]
-    
+
     async def delete_event(self, event_id: str, user: UserContext) -> bool:
         event = await self.collection.find_one({"_id": ObjectId(event_id)})
         if not event:
@@ -68,7 +67,7 @@ class EventRepository(BaseRepository):
             {"_id": ObjectId(event_id)}
         )
         return result.deleted_count == 1
-    
+
 
     async def update_event(self, event_id: str,
         update_data: EventUpdate, user: UserContext,

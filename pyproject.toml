@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90"]
+exclude = ["venv", ".git"]
+ignore = [
+    "E501",
+    "W292",
+    "W291",
+    "W293",
+]
