@@ -1,4 +1,5 @@
-from pydantic import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 from functools import lru_cache
 
 
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
     EVENT_SERVICE_URL: str
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
+    LOG_LEVEL: str = "INFO"
 
 
 @lru_cache

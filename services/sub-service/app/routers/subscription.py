@@ -29,7 +29,7 @@ def paginate(items, page: int = 1, page_size: int = 10):
 
 @router.post("/subscribe/{event_id}", status_code=status.HTTP_201_CREATED)
 async def subscribe_to_event(
-    event_id: int,
+    event_id: str,
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
     event_client: EventClient = Depends(get_event_client),
@@ -146,7 +146,7 @@ async def get_my_subscriptions(
 
 @router.post("/unsubscribe/{event_id}")
 async def unsubscribe_from_event(
-    event_id: int,
+    event_id: str,
     db: Session = Depends(get_db),
     current_user: UserContext = Depends(get_current_user),
 ):

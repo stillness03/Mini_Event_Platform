@@ -21,7 +21,7 @@ class EventClient:
         self.settings = get_settings()
         self.base_url = self.settings.EVENT_SERVICE_URL
 
-    async def get_event(self, event_id: int):
+    async def get_event(self, event_id: str):
         
         max_retries = 3
         base_delay = 0.5 # seconds
