@@ -56,10 +56,18 @@ jobs:
 
             - name: Run Alembic migrations
               working-directory: services/sub-service
+              env:
+                SUB_DATABASE_URL: ${{ secrets.SUB_DATABASE_URL }}
+                EVENT_SERVICE_URL: ${{ secrets.EVENT_SERVICE_URL }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
               run: alembic upgrade head
 
             - name: Run test (sub-service)
               working-directory: services/sub-service
+              env:
+                SUB_DATABASE_URL: ${{ secrets.SUB_DATABASE_URL }}
+                EVENT_SERVICE_URL: ${{ secrets.EVENT_SERVICE_URL }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
               run: pytest
 
             - name: Remove .env after tests
