@@ -1,4 +1,3 @@
-import pytest
 
 def test_subscribe_success(client):
     response = client.post("/events/subscribe/event-test-1")

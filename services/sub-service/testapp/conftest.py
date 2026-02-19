@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.core.database import Base, get_db
 from app.core.security import get_current_user
-from app.clients.event_client import EventClient, get_event_client
+from app.clients.event_client import get_event_client
 from app.schemas.subcription import UserContext
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"

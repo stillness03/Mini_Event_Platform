@@ -1,5 +1,4 @@
 from logging.config import fileConfig
-import os
 
 from sqlalchemy import create_engine, pool
 from alembic import context
@@ -7,7 +6,6 @@ from alembic import context
 from app.core.database import Base
 from app.core.config import get_settings
 
-import app.models
 
 settings = get_settings()
 DATABASE_URL = get_settings().SUB_DATABASE_URL

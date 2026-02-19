@@ -1,7 +1,6 @@
 import pytest
 
 from app.repositories.sub_repository import SubRepository
-from app.models.subscription import Subscription
 
 
 @pytest.fixture()
