@@ -1,0 +1,75 @@
+name: Subscription 
+
+on:
+    push:
+        branches: [ "main" ]
+        paths:
+            - 'services/sub-service/**'
+    pull_request:
+        paths:
+            - 'services/sub-service/**'
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:15
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: test_db
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd="pg_isready -U postgres"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=5
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: "3.12"
+
+            - name: Create .env file from GitHub Secrets
+              run: |
+                  echo "SUB_DATABASE_URL=${{ secrets.SUB_DATABASE_URL }}" > services/sub-service/.env
+                  echo "EVENT_SERVICE_URL=${{ secrets.EVENT_SERVICE_URL }}" >> services/sub-service/.env
+                  echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> services/sub-service/.env
+
+            - name: Debug fiels
+              run: ls -R
+
+            - name: Install root dependencies
+              run: |
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+
+            - name: Set PYTHONPATH for sub-service
+              run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/services/sub-service" >> $GITHUB_ENV
+
+            - name: Run Alembic migrations
+              working-directory: services/sub-service
+              env:
+                SUB_DATABASE_URL: ${{ secrets.SUB_DATABASE_URL }}
+                EVENT_SERVICE_URL: ${{ secrets.EVENT_SERVICE_URL }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
+              run: alembic upgrade head
+
+            - name: Run test (sub-service)
+              working-directory: services/sub-service
+              env:
+                SUB_DATABASE_URL: ${{ secrets.SUB_DATABASE_URL }}
+                EVENT_SERVICE_URL: ${{ secrets.EVENT_SERVICE_URL }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
+              run: pytest
+
+            - name: Remove .env after tests
+              run: rm -f services/sub-service/.env
+
