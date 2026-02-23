@@ -11,8 +11,48 @@ EVENT_IDS = [
 ]
 
 
+USER_IDS = [
+    "507f1f77bcf86cd799439013",
+    "507f1f77bcf86cd799439012",
+    "507f1f77bcf86cd799439011",
+    "507f1f77bcf86cd799439010",
+]
+
 class EventUser(HttpUser):
     wait_time = between(0.1, 0.5)
+
+    def on_start(self):
+        self.token = random.choice(USER_IDS)
+
+    @task(1)
+    def get_list_events(self):
+        user_id = random.choice(USER_IDS)
+        headers = {
+            "x-user-id": user_id,
+            "x-user-role": "user",
+            "accept": "application/json",
+        }
+
+        with self.client.get(
+            "/events/my?limit=10",
+            headers=headers,
+            catch_response=True,
+        ) as response:
+            if response.status_code != 200:
+                response.failure(f"Unexpected status: {response.status_code}")
+                return
+
+            data = response.json()
+            if "items" not in data:
+                response.failure("No items in response")
+                return
+
+            for item in data["items"]:
+                if item["owner_id"] != user_id:
+                    response.failure("Returned events of another user")
+                    return
+
+            response.success()
 
     @task(8)
     def get_hot_event(self):

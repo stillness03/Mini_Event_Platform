@@ -1,16 +1,12 @@
 import os
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from dotenv import load_dotenv
+from pymongo import ReadPreference
+from app.core.config import get_settings
+from app.indexes.events import create_event_indexes
 
+settings = get_settings()
 
-load_dotenv()
-
-
-MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME")
-
-
-if MONGO_URI is None or DB_NAME is None:
+if settings.MONGO_URI is None or settings.DB_NAME is None:
     raise ValueError("MONGO_URI and DB_NAME must be set in environment variables")
 
 
@@ -23,12 +19,15 @@ mongo_db = MongoDb()
 
 async def connect_to_mongo() -> None:
     mongo_db.client = AsyncIOMotorClient(
-        MONGO_URI,
-        maxPoolSize=50,
-        minPoolSize=10,
+        settings.MONGO_URI,
+        maxPoolSize=100,
+        minPoolSize=20,
         serverSelectionTimeoutMS=5000,
+        read_preference=ReadPreference.SECONDARY_PREFERRED,
     )
-    mongo_db.db = mongo_db.client[DB_NAME]
+    mongo_db.db = mongo_db.client[settings.DB_NAME]
+
+    await create_event_indexes(mongo_db.db)
 
 
 async def close_mongo_connection() -> None:

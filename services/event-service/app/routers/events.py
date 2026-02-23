@@ -1,73 +1,68 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.schemas.events import EventCreate, EventResponse, EventUpdate, UserContext
-from app.repositories.event import EventRepository
-from app.core.security import event_creation_rate_limit, get_event_repo, get_current_user
+from app.schemas.events import EventCreate, EventListResponse, EventResponse, EventUpdate, UserContext
+from app.core.security import get_current_user
+from app.core.dependencies import get_event_service
+from app.service.event_service import EventService
+
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
-@router.post( "", response_model=EventResponse,
-        status_code=status.HTTP_201_CREATED, dependencies=[Depends(event_creation_rate_limit)],
-        )
+@router.post("", response_model=EventResponse)
 async def create_event(
     event: EventCreate,
-    repo: EventRepository = Depends(get_event_repo),
-    user: UserContext = Depends(get_current_user),  # placeholder done in security.py(not forgotten)
+    user: UserContext = Depends(get_current_user),
+    service: EventService = Depends(get_event_service),
 ):
-    return await repo.create_event(event, user.owner_id)
+    return await service.create_event(event, user)
 
-@router.get("/my", response_model=list[EventResponse])
+
+@router.get("/my", response_model=EventListResponse)
 async def list_my_events(
     limit: int = 20,
-    offset: int = 0,
-    repo: EventRepository = Depends(get_event_repo),
+    cursor: str | None = None,
     user: UserContext = Depends(get_current_user),
+    service: EventService = Depends(get_event_service),
 ):
-    return await repo.list_by_owner(
-        owner_id=user.owner_id,
+    return await service.list_my_events(
+        user=user,
         limit=limit,
-        offset=offset,
+        cursor=cursor,
     )
 
-@router.get( "/{event_id}", response_model=EventResponse)
-async def get_event( event_id: str,
-    repo: EventRepository = Depends(get_event_repo),
-    ):
-    event = await repo.get_event_by_id(event_id)
+
+@router.get("/{event_id}", response_model=EventResponse)
+async def get_event(
+    event_id: str,
+    service: EventService = Depends(get_event_service),
+):
+    event = await service.get_event(event_id)
     if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=404)
     return event
 
 
-@router.post("/{event_id}/delete", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{event_id}")
 async def delete_event(
     event_id: str,
-    repo: EventRepository = Depends(get_event_repo),
-    user: UserContext = Depends(get_current_user)
+    user: UserContext = Depends(get_current_user),
+    service: EventService = Depends(get_event_service),
 ):
-    success = await repo.delete_event(event_id, user)
-
+    success = await service.delete_event(event_id, user)
     if not success:
-        raise HTTPException(status_code=404, detail="Event not found")
-
+        raise HTTPException(status_code=404)
     return None
 
 
-@router.post("/{event_id}/update", response_model=EventResponse)
+@router.put("/{event_id}", response_model=EventResponse)
 async def update_event(
     event_id: str,
-    update_data: EventUpdate,
-    repo: EventRepository = Depends(get_event_repo),
+    update: EventUpdate,
     user: UserContext = Depends(get_current_user),
+    service: EventService = Depends(get_event_service),
 ):
-    updated_event = await repo.update_event(
-        event_id=event_id,
-        update_data=update_data,
-        user=user,
-    )
-
-    if not updated_event:
-        raise HTTPException(status_code=404, detail="Event not found")
-
-    return updated_event
+    updated = await service.update_event(event_id, update, user)
+    if not updated:
+        raise HTTPException(status_code=404)
+    return updated
