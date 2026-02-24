@@ -8,6 +8,7 @@ router = APIRouter()
 logger = logging.getLogger("gateway")
 
 PROXY_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+ALLOWED_HEADERS = {"content-type", "content-length"}
 
 breaker = {
     "users" : pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30),
@@ -15,7 +16,6 @@ breaker = {
     "subscriptions" : pybreaker.CircuitBreaker(fail_max=5, reset_timeout=30)
 }
 
-@breaker
 async def _call(client, method, url, headers, content, params):
     return await client.request(
         method=method, url=url,
