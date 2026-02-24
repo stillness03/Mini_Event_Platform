@@ -13,6 +13,8 @@ setup_logging()
 
 app = FastAPI(title="API Gateway")
 
+app.state.client = httpx.AsyncClient(timeout=get_settings().REQUEST_TIMEOUT)
+
 app.middleware("http")(logging_middleware)
 app.middleware("http")(auth_middleware)
 

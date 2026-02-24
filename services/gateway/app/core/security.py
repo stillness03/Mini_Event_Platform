@@ -8,7 +8,7 @@ logger = logging.getLogger("gateway")
 
 def verify_token(request: Request, settings: Settings | None = None):
     if settings is None:
-        settings = get_settings
+        settings = get_settings()
 
     auth_header = request.headers.get("Authorization")
 
