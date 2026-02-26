@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.schemas.events import EventCreate, EventListResponse, EventResponse, EventUpdate, UserContext
-from app.core.security import get_current_user
+from app.core.security import event_creation_rate_limit, get_current_user
 from app.core.dependencies import get_event_service
 from app.service.event_service import EventService
 
@@ -9,7 +9,10 @@ from app.service.event_service import EventService
 router = APIRouter(prefix="/events", tags=["Events"])
 
 
-@router.post("", response_model=EventResponse)
+@router.post(
+        "", response_model=EventResponse, status_code=201,
+        dependencies=[Depends(event_creation_rate_limit)]
+    )
 async def create_event(
     event: EventCreate,
     user: UserContext = Depends(get_current_user),

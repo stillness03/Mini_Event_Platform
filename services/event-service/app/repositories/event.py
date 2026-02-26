@@ -26,6 +26,11 @@ class EventRepository(BaseRepository):
 
         return self._to_response(event_data)
 
+    async def count_created_after(self, owner_id: str, after: datetime) -> int:
+        return await self.collection.count_documents({
+            "owner_id": to_object_id(owner_id),
+            "created_at": {"$gte": after},
+        })
 
     async def get_by_id(self, event_id: str):
         doc = await self.collection.find_one(

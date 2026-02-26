@@ -7,7 +7,9 @@ from app.repositories.event import EventRepository
 from app.cache.cache_service import CacheService
 from app.core.policies.event import EventPolicy
 from app.schemas.events import EventCreate, EventUpdate, UserContext
+from app.core.config import get_settings
 
+settings = get_settings()
 
 class EventService:
     def __init__(self, repo: EventRepository, cache: CacheService):
@@ -25,21 +27,22 @@ class EventService:
 
     async def get_event(self, event_id: str):
         cache_key = f"event:{event_id}"
-
+    
         cached = await self.cache.get(cache_key)
-        if cached:
+        if cached is not None:
             return cached
-
+    
         event = await self.repo.get_by_id(event_id)
         if not event:
             return None
-
-        await self.cache.set(cache_key, event.model_dump(mode="json"))
-        return event
+    
+        data = event.model_dump(mode="json")
+        await self.cache.set(cache_key, data, ttl=settings.CACHE_EVENT_TTL)
+        return data
 
     async def list_my_events(
             self, user: UserContext, 
-            limit: int, cursor: str | None
+            limit: int, cursor: str | None,
         ):
         cache_key = f"user_events:{user.owner_id}:{limit}:{cursor or 'start'}"
 
@@ -83,7 +86,7 @@ class EventService:
             "next_cursor": next_cursor,
         }
 
-        await self.cache.set(cache_key, result)
+        await self.cache.set(cache_key, result, ttl=settings.CACHE_USER_EVENTS_TTL)
 
         return result
 
