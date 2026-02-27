@@ -1,7 +1,5 @@
 import pytest
-from bson import ObjectId
 
-from app.schemas.events import EventCreate
 
 @pytest.mark.asyncio
 async def test_create_event_route(async_client):

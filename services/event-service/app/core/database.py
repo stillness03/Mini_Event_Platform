@@ -1,4 +1,3 @@
-import os
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo import ReadPreference
 from app.core.config import get_settings

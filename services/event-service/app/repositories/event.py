@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pymongo import DESCENDING
 
 from app.repositories.base import BaseRepository
-from app.schemas.events import EventCreate, EventResponse, EventUpdate, UserContext
+from app.schemas.events import EventCreate, EventResponse, EventUpdate
 from app.models.mongo import to_object_id
 
 
