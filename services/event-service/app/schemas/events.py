@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 class UserContext(BaseModel):
     owner_id: str
@@ -27,5 +27,7 @@ class EventResponse(EventBase):
     updated_at: Optional[datetime] = None
     schema_version: int
 
-
+class EventListResponse(BaseModel):
+    items: List[EventResponse]
+    next_cursor: Optional[str]
 

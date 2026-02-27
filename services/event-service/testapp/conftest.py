@@ -6,16 +6,19 @@ from httpx._transports.asgi import ASGITransport
 import pytest
 import pytest_asyncio
 
+from unittest.mock import AsyncMock
+from app.cache.dep_cache import get_cache
+
 import os
 from dotenv import load_dotenv
 
+from app.service.event_service import EventService
+from app.core.security import get_event_repo, get_current_user
 from app.schemas.events import UserContext
 from app.repositories.event import EventRepository
 from app.main import app
 
 load_dotenv()
-
-TEST_DB_NAME = "test_db"
 
 
 #fixtures for user contexts
@@ -32,12 +35,6 @@ def admin():
         owner_id=str(ObjectId()),
         role="admin",
     )
-
-
-def override_user(user: UserContext):
-    def _override():
-        return user
-    return _override
 
 
 @pytest_asyncio.fixture
@@ -58,18 +55,37 @@ async def mongo_test_db(mongo_client):
 def event_repo(mongo_test_db):
     return EventRepository(mongo_test_db)
 
+@pytest.fixture
+def event_service(event_repo):
+    mock_cache = AsyncMock()
+    mock_cache.get.return_value = None
+    mock_cache.set.return_value = None
+    mock_cache.delete.return_value = None
+    mock_cache.delete_pattern.return_value = None
+    return EventService(event_repo, mock_cache)
 
 #async http client fixture
 @pytest_asyncio.fixture
 async def async_client(event_repo):
-    from app.core.security import get_event_repo, get_current_user
+    counter = {}
+    mock_cache = AsyncMock()
 
-    app.dependency_overrides[get_event_repo] = lambda: event_repo
+    async def fake_incr_with_ttl(key, ttl):
+        counter[key] = counter.get(key, 0) + 1
+        return counter[key]
+
+    mock_cache.incr_with_ttl.side_effect = fake_incr_with_ttl
+    mock_cache.get.return_value = None
+    mock_cache.set.return_value = None
+    mock_cache.delete.return_value = None
+    mock_cache.delete_pattern.return_value = None
 
     user_id = str(ObjectId())
+
+    app.dependency_overrides[get_event_repo] = lambda: event_repo
+    app.dependency_overrides[get_cache] = lambda: mock_cache
     app.dependency_overrides[get_current_user] = lambda: UserContext(
-        owner_id=user_id,
-        role="user",
+        owner_id=user_id, role="user"
     )
 
     transport = ASGITransport(app=app)

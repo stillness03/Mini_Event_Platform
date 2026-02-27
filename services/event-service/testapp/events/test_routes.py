@@ -1,26 +1,4 @@
 import pytest
-from bson import ObjectId
-
-from app.schemas.events import EventCreate
-
-
-@pytest.mark.asyncio
-async def test_create_and_get_event(event_repo):
-    owner_id = str(ObjectId())
-    event_in = EventCreate(title="Test Event", description="Test Description")
-
-
-    event = await event_repo.create_event(event_in, owner_id)
-    assert event.title == "Test Event"
-    assert event.description == "Test Description"
-    assert event.owner_id == owner_id
-    assert event.id is not None
-
-
-    fetched = await event_repo.get_event_by_id(event.id)
-    assert fetched is not None
-    assert fetched.title == "Test Event"
-    assert fetched.description == "Test Description"
 
 
 @pytest.mark.asyncio
@@ -54,9 +32,9 @@ async def test_list_my_events_route(async_client):
     assert res.status_code == 200
     data = res.json()
 
-    assert isinstance(data, list)
-    assert len(data) >= 1
-    assert data[0]["title"] == "My Event"
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) >= 1
+    assert data["items"][0]["title"] == "My Event"
 
 
 @pytest.mark.asyncio
@@ -85,13 +63,13 @@ async def test_delete_event_route(async_client):
     create_res = await async_client.post("/events", json=payload)
     event_id = create_res.json()["id"]
 
-    res = await async_client.post(f"/events/{event_id}/delete")
-
-    assert res.status_code == 204
+    res = await async_client.delete(f"/events/{event_id}")
+    assert res.status_code == 200
 
     # verify deleted
     get_res = await async_client.get(f"/events/{event_id}")
     assert get_res.status_code == 404
+
 
 
 @pytest.mark.asyncio
@@ -108,8 +86,8 @@ async def test_update_event_route(async_client):
         "title": "New Title"
     }
 
-    res = await async_client.post(
-        f"/events/{event_id}/update",
+    res = await async_client.put(
+        f"/events/{event_id}", 
         json=update_payload
     )
 
@@ -119,3 +97,13 @@ async def test_update_event_route(async_client):
     assert data["title"] == "New Title"
     assert data["description"] == "Old Desc"
 
+
+@pytest.mark.asyncio
+async def test_event_rate_limit(async_client):
+    for i in range(5):
+        response = await async_client.post("/events", json={"title": f"Event {i}", "description": "Desc"})
+        assert response.status_code == 201
+
+
+    response = await async_client.post("/events", json={"title": "Event 6", "description": "Desc"})
+    assert response.status_code == 429

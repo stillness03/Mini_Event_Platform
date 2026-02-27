@@ -16,13 +16,5 @@ class EventPolicy:
 
     @staticmethod
     def can_modify(event, user: UserContext) -> bool:
-        owner_id = (
-            event.get("owner_id")
-            if isinstance(event, dict)
-            else event.owner_id
-        )
-
-        return (
-            user.role == "admin"
-            or str(owner_id) == user.owner_id
-        )
+        owner_id = EventPolicy._get_owner_id(event)  
+        return user.role == "admin" or str(owner_id) == user.owner_id

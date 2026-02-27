@@ -1,11 +1,13 @@
-from pydantic import BaseModel
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+    )
+
     # Mongo
     MONGO_URI: str
     DB_NAME: str
@@ -13,11 +15,20 @@ class Settings(BaseModel):
     # Business rules
     MAX_EVENTS_PER_HOUR: int = 5
 
+    # Redis
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_MAX_CONNECTIONS: int = 50
+    REDIS_SOCKET_TIMEOUT: int = 5
+    REDIS_SOCKET_CONNECT_TIMEOUT: int = 5
+    
+    # Cache TTL
+    CACHE_DEFAULT_TTL: int = 300
+    CACHE_EVENT_TTL: int = 600
+    CACHE_USER_EVENTS_TTL: int = 120
 
-settings = Settings(
-    MONGO_URI=os.environ["MONGO_URI"],
-    DB_NAME=os.environ["DB_NAME"],
-    MAX_EVENTS_PER_HOUR=int(
-        os.getenv("MAX_EVENTS_PER_HOUR", 5)
-    ),
-)
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

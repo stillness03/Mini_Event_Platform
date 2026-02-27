@@ -1,12 +1,16 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import Header, HTTPException, status
 from fastapi import Depends
-from datetime import datetime, timedelta, timezone
+
 
 from app.schemas.events import UserContext
 from app.repositories.event import EventRepository
 from app.core.database import get_db
+from app.cache.cache_service import CacheService
+from app.core.config import get_settings
+from app.cache.dep_cache import get_cache
 
+settings = get_settings()
 
 def get_event_repo(
     db: AsyncIOMotorDatabase = Depends(get_db),
@@ -30,18 +34,15 @@ def get_current_user(
     )
 
 async def event_creation_rate_limit(
-    repo: EventRepository = Depends(get_event_repo),
+    cache: CacheService = Depends(get_cache),
     user: UserContext = Depends(get_current_user),
 ):
-    one_minute_ago = datetime.now(timezone.utc) - timedelta(minutes=1)
+    key = f"rate_limit:event_create:{user.owner_id}"
+    
+    count = await cache.incr_with_ttl(key, 60)
 
-    count = await repo.count_created_after(
-        owner_id=user.owner_id,
-        after=one_minute_ago,
-    )
-
-    if count >= 5:
+    if count > settings.MAX_EVENTS_PER_HOUR:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Event creation limit exceeded (5 per minute)",
+            detail="Event creation limit exceeded",
         )
