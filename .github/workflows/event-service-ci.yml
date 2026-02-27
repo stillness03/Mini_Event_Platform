@@ -24,6 +24,16 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,5 +59,8 @@ jobs:
         env:
             MONGO_URI: mongodb://localhost:27017
             DB_NAME: test_db
+            REDIS_HOST: localhost
+            REDIS_PORT: 6379
+            REDIS_DB: 0
         run: python -m pytest
 
