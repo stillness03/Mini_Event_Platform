@@ -1,16 +1,13 @@
 import time
-from fastapi import FastAPI, Depends, Request
-from sqlalchemy.orm import Session
+from fastapi import FastAPI, Request
 
-from app.core.database import get_db
-from app.routers.users import routers as users_routers
-from app.routers.auth import router as auth_routers
+from app.routers.users import router as users_router
+from app.routers.auth import router as auth_router
 
+app = FastAPI(title="user-service")
 
-app = FastAPI()
-
-app.include_router(users_routers, tags=["users"])
-app.include_router(auth_routers, tags=["auth"])
+app.include_router(users_router)
+app.include_router(auth_router)
 
 
 @app.middleware("http")
@@ -22,6 +19,6 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-@app.get("/check-db")
-def check_db(db: Session = Depends(get_db)):
-    return {"status": "db session works!"}
+@app.get("/health", tags=["health"])
+def health():
+    return {"status": "ok"}

@@ -1,75 +1,95 @@
-from fastapi import Depends, HTTPException, status, APIRouter, Body
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from fastapi.security import HTTPBearer
-
 
 from app.core.database import get_db
-from app.models.users import User
+from app.core.security import hash_password
+from app.repositories.auth_repo import AuthRepository
+from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.schemas.users import LoginRequest, UserCreate, AuthResponse, UserResponse
-from app.core.config import create_access_token, create_refresh_token
-from app.core.security import hash_password, verify_password
+from app.service.auth_service import AuthService
 
 
-router = APIRouter(prefix='/auth', tags=['auth'])
-
+router = APIRouter(prefix="/auth", tags=["auth"])
 bearer_scheme = HTTPBearer()
 
-class UserValidator:
-    def __init__(self, db: Session = Depends(get_db)):
-        self.db = db
-
-    def validate_user_create(self, data: UserCreate):
-        if self.db.query(User).filter(User.email == data.email).first():
-            raise HTTPException(400, "Email already exists")
-
-        if self.db.query(User).filter(User.username == data.username).first():
-            raise HTTPException(400, "Username already exists")
-
+def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
+    return AuthService(
+        auth_repo=AuthRepository(db),
+        token_repo=RefreshTokenRepository(db),
+    )
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register_user(data_user: UserCreate, db: Session = Depends(get_db),
-                  validator: UserValidator = Depends()):
-
-    validator.validate_user_create(data_user)
-
-    hashed_pwd = hash_password(data_user.password)
-    new_user = User(
-        username=data_user.username,
-        email=data_user.email,
-        hashed_password=hashed_pwd,
-        auth_role="user"
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    access_token = create_access_token(sub=str(new_user.id))
-    refresh_token = create_refresh_token(sub=str(new_user.id))
-
-    return AuthResponse(
-        user=UserResponse.model_validate(new_user),
-        access_token=access_token,
-        refresh_token=refresh_token
-    )
-
-@router.post("/login", response_model=AuthResponse)
-def login_user(
-    data: LoginRequest = Body(...),
-    db: Session = Depends(get_db)
+def register(
+    data: UserCreate,
+    request: Request,
+    service: AuthService = Depends(get_auth_service),
 ):
-
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-
-    access_token = create_access_token(sub=str(user.id))
-    refresh_token = create_refresh_token(sub=str(user.id))
-
+    user, access_token, refresh_token = service.register_user(
+        email=data.email,
+        hashed_password=hash_password(data.password),
+        username=data.username,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
     return AuthResponse(
         user=UserResponse.model_validate(user),
         access_token=access_token,
-        refresh_token=refresh_token
+        refresh_token=refresh_token,
     )
+
+@router.post("/login", response_model=AuthResponse)
+def login(
+    data: LoginRequest,
+    request: Request,
+    service: AuthService = Depends(get_auth_service),
+):
+    user, access_token, refresh_token = service.login_user(
+        email=data.email,
+        password=data.password,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    return AuthResponse(
+        user=UserResponse.model_validate(user),
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+
+@router.post("/refresh", response_model=AuthResponse)
+def refresh(
+    request: Request,
+    creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    service: AuthService = Depends(get_auth_service),
+):
+    user, access_token, refresh_token = service.refresh_tokens(
+        refresh_token=creds.credentials,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    return AuthResponse(
+        user=UserResponse.model_validate(user),
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    service: AuthService = Depends(get_auth_service),
+):
+    service.logout(refresh_token=creds.credentials)
+
+
+@router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT)
+def logout_all(
+    creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    service: AuthService = Depends(get_auth_service),
+):
+    from app.core.security import verify_token
+    claims = verify_token(creds.credentials, expected_type="refresh")
+    service.logout_all(user_id=claims["sub"])
 
 
