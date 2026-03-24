@@ -1,4 +1,3 @@
-from sqlalchemy.orm import Session
 import uuid
 from app.models.users import User
 from .base import BaseRepository

@@ -55,7 +55,7 @@ class RefreshTokenRepository(BaseRepository):
         # Revoke all refresh tokens for the specified user
         self.db.query(RefreshToken).filter(
             RefreshToken.user_id == user_id,
-            RefreshToken.revoked == False,
+            RefreshToken.revoked.is_(False),
         ).update({"revoked": True})
         self.db.commit()
 
@@ -72,7 +72,7 @@ class RefreshTokenRepository(BaseRepository):
             self.db.query(RefreshToken)
             .filter(
                 RefreshToken.user_id == user_id,
-                RefreshToken.revoked == False,
+                RefreshToken.revoked.is_(False),
                 RefreshToken.expires_at > datetime.now(timezone.utc),
             )
             .order_by(RefreshToken.created_at.desc())
