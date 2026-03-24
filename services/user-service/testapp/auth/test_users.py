@@ -1,7 +1,7 @@
 
 # ====== created users test file ======
 from app.models.users import User
-from datetime import datetime
+from datetime import datetime, timezone
 
 def test_create_user(db):
     user = User(
@@ -9,7 +9,7 @@ def test_create_user(db):
         email="test@gmail.com",
         hashed_password="hashed",
         auth_role="user",
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
 
     db.add(user)

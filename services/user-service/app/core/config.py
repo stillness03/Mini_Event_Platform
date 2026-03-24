@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     APP_ENV: str = "development"
     DATABASE_URL: str
+    ALLOWED_ORIGINS: list[str]
 
     RATE_LIMIT_PER_MINUTE: int = 60
     AUTH_RATE_LIMIT_PER_MINUTE: int = 10 # for auth

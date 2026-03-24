@@ -5,21 +5,24 @@ from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from faker import Faker
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.pool import NullPool
 
+from app.core.config import get_settings
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.users import User
-from app.routers.users import get_user_from_token
+from app.routers.users import get_user
 
+settings = get_settings()
 
 fake = Faker()
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+TEST_DATABASE_URL = settings.DATABASE_URL
 
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    TEST_DATABASE_URL,
+    poolclass=NullPool,
 )
 
 TestingSessionLocal = sessionmaker(
@@ -52,7 +55,7 @@ def client(db):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    with TestClient(app) as c:
+    with TestClient(app, headers={"User-Agent": "pytest-client"}) as c:
         yield c
 
     app.dependency_overrides.clear()
@@ -90,10 +93,10 @@ def test_user_2(db):
 
 @pytest_asyncio.fixture
 async def auth_async_client(test_user):
-    def override_get_user_from_token():
+    def override_get_user():
         return test_user
 
-    app.dependency_overrides[get_user_from_token] = override_get_user_from_token
+    app.dependency_overrides[get_user] = override_get_user
 
 
     async with AsyncClient(
@@ -110,13 +113,13 @@ async def auth_async_client(test_user):
 def make_auth_client(db):
     async def _make(user):
 
-        def override_get_user_from_token():
+        def override_get_user():
             return user
 
         def override_get_db():
             yield db
 
-        app.dependency_overrides[get_user_from_token] = override_get_user_from_token
+        app.dependency_overrides[get_user] = override_get_user
         app.dependency_overrides[get_db] = override_get_db
 
         async with AsyncClient(
