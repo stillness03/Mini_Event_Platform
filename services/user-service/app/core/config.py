@@ -1,64 +1,35 @@
-from datetime import UTC, datetime, timedelta, timezone
-from fastapi import HTTPException
-import os
-import jwt
-from dotenv import load_dotenv
-
-from app.core.security import get_env_int
-
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+from functools import lru_cache
 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = get_env_int(
-    "ACCESS_TOKEN_EXPIRE_MINUTES", 30
-)
-REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-
-def create_token(data: dict, expires_delta: timedelta):
-    expire = datetime.now(timezone.utc) + expires_delta
-
-    payload = data.copy()
-    payload["exp"] = int(expire.timestamp())
-
-    token = jwt.encode(
-        payload,
-        SECRET_KEY,
-        algorithm=ALGORITHM
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
     )
 
-    return token
+    APP_NAME: str = "user-service"
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    APP_ENV: str = "development"
+    DATABASE_URL: str
+    ALLOWED_ORIGINS: list[str]
 
+    RATE_LIMIT_PER_MINUTE: int = 60
+    AUTH_RATE_LIMIT_PER_MINUTE: int = 10 # for auth
 
-def create_access_token(sub: str):
-    return create_token({"sub": sub}, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def secret_key_must_be_strong(cls, v: str) -> str:
+        if len(v) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 characters long")
+        return v
 
-def create_refresh_token(sub: str):
-    return create_token({"sub": sub, "type": "refresh"}, timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
 
-
-def verify_token(token: str):
-    print("\n====================")
-    print("RAW TOKEN RECEIVED:", repr(token))
-    print("====================")
-
-    try:
-        claims = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        exp_ts = claims.get("exp")
-        print("EXPIRATION:", datetime.fromtimestamp(exp_ts, tz=UTC))
-        print("NOW:", datetime.now(UTC))
-        return claims
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except Exception as e:
-        print("JWT ERROR:", repr(e))
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-
-def decode_token(token: str):
-    try:
-        return verify_token(token)
-    except HTTPException as e:
-        return {"detail": e.detail}
+settings = get_settings()
