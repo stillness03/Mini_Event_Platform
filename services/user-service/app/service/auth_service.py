@@ -17,14 +17,14 @@ from app.core.security import (
 logger = logging.getLogger(__name__)
 
 class AuthService:
-    def __init__(self, repo: AuthRepository, token_repo: RefreshTokenRepository):
-        self.repo = repo
+    def __init__(self, auth_repo: AuthRepository, token_repo: RefreshTokenRepository):
+        self.auth_repo = auth_repo
         self.token_repo = token_repo
 
     def register_user(
             self, 
             email: str, 
-            password: str, 
+            hashed_password: str, 
             username: str,
             user_agent: str | None = None,
             ip_address: str | None = None,
@@ -42,18 +42,18 @@ class AuthService:
        
         user = self.auth_repo.create_user(
             email=email,
-            hashed_password=hash_password(password),
+            hashed_password=hashed_password,
             username=username
         )
-        self.repo.db.commit()
-        self.repo.db.refresh(user)
+        self.auth_repo.db.commit()
+        self.auth_repo.db.refresh(user)
        
         access_token, refresh_token = self._issue_tokens(
             user, user_agent=user_agent, ip_address=ip_address
             )
         logger.info("User registered: %s", user.id)
         return user, access_token, refresh_token
-    
+
 
     def login_user(
             self,
@@ -70,7 +70,7 @@ class AuthService:
                 detail="Invalid email or password"
             )
         
-        self.token_repo.delete_expired(str(user.id))
+        self.token_repo.delete_expired_tokens(str(user.id))
         access_token, refresh_token = self._issue_tokens(user, user_agent, ip_address)
         logger.info("User logged in: %s", user.id)
         return user, access_token, refresh_token

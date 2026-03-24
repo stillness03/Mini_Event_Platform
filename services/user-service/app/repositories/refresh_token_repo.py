@@ -12,7 +12,7 @@ def hash_token(token: str) -> str:
 class RefreshTokenRepository(BaseRepository):
     def create(
             self,
-            user_id: int,
+            user_id: str,
             token: str,
             jti: str,
             expires_at: datetime,
@@ -51,7 +51,7 @@ class RefreshTokenRepository(BaseRepository):
         self.db.refresh(refresh_token)
         return refresh_token
     
-    def revoke_all_for_user(self, user_id: int) -> None:
+    def revoke_all_for_user(self, user_id: str) -> None:
         # Revoke all refresh tokens for the specified user
         self.db.query(RefreshToken).filter(
             RefreshToken.user_id == user_id,
@@ -59,7 +59,7 @@ class RefreshTokenRepository(BaseRepository):
         ).update({"revoked": True})
         self.db.commit()
 
-    def delete_expired_tokens(self, user_id: int) -> None:
+    def delete_expired_tokens(self, user_id: str) -> None:
         # Delete all expired refresh tokens for the specified user
         self.db.query(RefreshToken).filter(
             RefreshToken.user_id == user_id,
