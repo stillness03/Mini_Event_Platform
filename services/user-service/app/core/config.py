@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     DATABASE_URL: str
 
+    RATE_LIMIT_PER_MINUTE: int = 60
+    AUTH_RATE_LIMIT_PER_MINUTE: int = 10 # for auth
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_must_be_strong(cls, v: str) -> str:

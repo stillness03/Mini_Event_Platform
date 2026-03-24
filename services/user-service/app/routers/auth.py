@@ -8,7 +8,8 @@ from app.repositories.auth_repo import AuthRepository
 from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.schemas.users import LoginRequest, UserCreate, AuthResponse, UserResponse
 from app.service.auth_service import AuthService
-
+from app.core.limiter import limiter
+from app.core.security import verify_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 bearer_scheme = HTTPBearer()
@@ -21,6 +22,7 @@ def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 def register(
     data: UserCreate,
     request: Request,
@@ -40,6 +42,7 @@ def register(
     )
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit("10/minute")
 def login(
     data: LoginRequest,
     request: Request,
@@ -58,6 +61,7 @@ def login(
     )
 
 @router.post("/refresh", response_model=AuthResponse)
+@limiter.limit("10/minute")
 def refresh(
     request: Request,
     creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -88,7 +92,6 @@ def logout_all(
     creds: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     service: AuthService = Depends(get_auth_service),
 ):
-    from app.core.security import verify_token
     claims = verify_token(creds.credentials, expected_type="refresh")
     service.logout_all(user_id=claims["sub"])
 
