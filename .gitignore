@@ -30,3 +30,5 @@ Thumbs.db
 .vscode/
 
 .pytest_cache/
+
+*.egg-info/
