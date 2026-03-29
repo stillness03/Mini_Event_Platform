@@ -1,14 +1,15 @@
 import pytest
 from bson import ObjectId
+from uuid import uuid4
 
-from app.schemas.events import EventCreate, EventUpdate, UserContext
-
+from app.schemas.events import EventCreate, EventUpdate
+from shared import UserContext
 
 @pytest.mark.asyncio
 async def test_update_event_permission_denied(event_repo, event_service):
     owner_id = str(ObjectId())
     other_user = UserContext(
-        owner_id=str(ObjectId()),
+        user_id=str(uuid4()),
         role="user"
     )
 
@@ -29,7 +30,7 @@ async def test_delete_event_permission_denied(event_repo, event_service):
     owner_id = str(ObjectId())
 
     other_user = UserContext(
-        owner_id=str(ObjectId()),
+        user_id=str(uuid4()),
         role="user"
     )
 
@@ -43,10 +44,10 @@ async def test_delete_event_permission_denied(event_repo, event_service):
 
 @pytest.mark.asyncio
 async def test_admin_can_modify_any_event(event_repo, event_service):
-    owner_id = str(ObjectId())
+    owner_id = str(uuid4())
 
     admin = UserContext(
-        owner_id=str(ObjectId()),
+        user_id=str(uuid4()),
         role="admin"
     )
 
@@ -66,9 +67,9 @@ async def test_admin_can_modify_any_event(event_repo, event_service):
 
 @pytest.mark.asyncio
 async def test_update_event_partial(event_repo, event_service):
-    owner_id = str(ObjectId())
+    owner_id = str(uuid4())
 
-    user = UserContext(owner_id=owner_id, role="user")
+    user = UserContext(user_id=owner_id, role="user")
 
     event = await event_repo.create_event(
         EventCreate(title="Title", description="Desc"),

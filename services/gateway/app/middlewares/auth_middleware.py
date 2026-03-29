@@ -5,14 +5,20 @@ from app.core.security import verify_token
 
 logger = logging.getLogger("gateway")
 
-PUBLIC_PATH = {"/health", "/ready", "/docs", "/openapi.json", "/redoc"}
+PUBLIC_PATH = {
+    "/health", "/ready", "/docs", "/openapi.json", "/redoc",
+    "/users/auth/register",
+    "/users/auth/login",
+    "/users/auth/refresh",
+}
 
 async def auth_middleware(request: Request, call_next):
     if request.url.path in PUBLIC_PATH:
         return await call_next(request)
 
     try:
-        verify_token(request)
+        payload = verify_token(request)
+        request.state.user = payload
 
     except HTTPException as e:
         logger.warning(

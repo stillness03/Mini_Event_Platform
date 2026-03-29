@@ -1,4 +1,4 @@
-from app.schemas.events import UserContext
+from shared import UserContext
 
 
 class EventPolicy:
@@ -17,4 +17,4 @@ class EventPolicy:
     @staticmethod
     def can_modify(event, user: UserContext) -> bool:
         owner_id = EventPolicy._get_owner_id(event)  
-        return user.role == "admin" or str(owner_id) == user.owner_id
+        return user.role == "admin" or str(owner_id) == str(user.user_id)

@@ -2,10 +2,6 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
 
-class UserContext(BaseModel):
-    owner_id: str
-    role: str
-
 
 class EventBase(BaseModel):
     title: str

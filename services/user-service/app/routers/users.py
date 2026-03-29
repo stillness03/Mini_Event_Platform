@@ -9,7 +9,7 @@ from app.repositories.refresh_token_repo import RefreshTokenRepository
 from app.schemas.users import UserResponse, UserUpdate, SessionResponse
 from app.service.auth_service import AuthService
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(tags=["users"])
 
 def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
     return AuthService(

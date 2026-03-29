@@ -2,11 +2,11 @@ import base64
 import json
 from datetime import datetime
 
-
+from shared import UserContext
 from app.repositories.event import EventRepository
 from app.cache.cache_service import CacheService
 from app.core.policies.event import EventPolicy
-from app.schemas.events import EventCreate, EventUpdate, UserContext
+from app.schemas.events import EventCreate, EventUpdate
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -18,9 +18,9 @@ class EventService:
 
 
     async def create_event(self, event: EventCreate, user: UserContext):
-        result = await self.repo.create_event(event, user.owner_id)
+        result = await self.repo.create_event(event, user.user_id)
 
-        await self.cache.delete_pattern(f"user_events:{user.owner_id}:*")
+        await self.cache.delete_pattern(f"user_events:{user.user_id}:*")
 
         return result.model_dump(mode="json")
 
@@ -44,7 +44,7 @@ class EventService:
             self, user: UserContext, 
             limit: int, cursor: str | None,
         ):
-        cache_key = f"user_events:{user.owner_id}:{limit}:{cursor or 'start'}"
+        cache_key = f"user_events:{user.user_id}:{limit}:{cursor or 'start'}"
 
         cached = await self.cache.get(cache_key)
         if cached:
@@ -62,7 +62,7 @@ class EventService:
                 raise ValueError("Invalid cursor")
 
         events = await self.repo.list_by_owner(
-            owner_id=user.owner_id,
+            owner_id=str(user.user_id),
             limit=limit,
             last_created_at=last_created_at,
             last_id=last_id,
@@ -106,7 +106,7 @@ class EventService:
         
         await self.cache.delete(f"event:{event_id}")
         await self.cache.delete_pattern(
-            f"user_events:{user.owner_id}:*"
+            f"user_events:{user.user_id}:*"
         )
 
         return True
@@ -128,7 +128,7 @@ class EventService:
 
         await self.cache.delete(f"event:{event_id}")
         await self.cache.delete_pattern(
-            f"user_events:{user.owner_id}:*"
+            f"user_events:{user.user_id}:*"
         )
 
         return updated.model_dump(mode="json")
