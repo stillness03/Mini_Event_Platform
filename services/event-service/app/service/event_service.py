@@ -62,7 +62,7 @@ class EventService:
                 raise ValueError("Invalid cursor")
 
         events = await self.repo.list_by_owner(
-            user_id=user.user_id,
+            owner_id=str(user.user_id),
             limit=limit,
             last_created_at=last_created_at,
             last_id=last_id,

@@ -2,6 +2,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -13,8 +14,8 @@ import os
 from dotenv import load_dotenv
 
 from app.service.event_service import EventService
-from app.core.security import get_event_repo, get_current_user
-from app.schemas.events import UserContext
+from app.core.dependencies import get_event_repo, get_current_user
+from shared.schemas import UserContext
 from app.repositories.event import EventRepository
 from app.main import app
 
@@ -80,12 +81,12 @@ async def async_client(event_repo):
     mock_cache.delete.return_value = None
     mock_cache.delete_pattern.return_value = None
 
-    user_id = str(ObjectId())
+    user_id = str(uuid4())
 
     app.dependency_overrides[get_event_repo] = lambda: event_repo
     app.dependency_overrides[get_cache] = lambda: mock_cache
     app.dependency_overrides[get_current_user] = lambda: UserContext(
-        owner_id=user_id, role="user"
+        user_id=user_id, role="user"
     )
 
     transport = ASGITransport(app=app)
