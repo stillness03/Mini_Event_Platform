@@ -54,6 +54,9 @@ jobs:
       - name: Set PYTHONPATH for event-service
         run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/services/event-service" >> $GITHUB_ENV
 
+      - name: Install shared library
+        run: pip install -e ./shared
+
       - name: Run tests (event-service)
         working-directory: services/event-service
         env:
