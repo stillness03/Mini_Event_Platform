@@ -5,7 +5,6 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
-from app.models.users import User # noqa: E402
 
 from sqlalchemy import engine_from_config, pool # noqa: E402
 from alembic import context # noqa: E402

@@ -1,8 +1,6 @@
 from fastapi import Depends, HTTPException, status
-from shared import verify_access_token
 from shared import UserContext
 
-from app.repositories.event import EventRepository
 from app.cache.cache_service import CacheService
 from app.core.config import get_settings
 from app.cache.dep_cache import get_cache

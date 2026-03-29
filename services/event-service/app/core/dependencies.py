@@ -1,12 +1,11 @@
 import logging
-from fastapi import Header, Depends, HTTPException, status
+from fastapi import Header, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.repositories.event import EventRepository
 from app.cache.cache_service import CacheService
 from app.cache.dep_cache import get_cache
 from app.service.event_service import EventService
-from shared.auth import verify_access_token
 from shared.schemas import UserContext
 from app.core.config import get_settings
 from app.core.database import get_db

@@ -62,5 +62,7 @@ jobs:
             REDIS_HOST: localhost
             REDIS_PORT: 6379
             REDIS_DB: 0
+            SECRET_KEY: ${{ secrets.SECRET_KEY }}
+            ALGORITHM: "HS256"
         run: python -m pytest
 

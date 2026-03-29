@@ -1,5 +1,4 @@
 from uuid import UUID
-from bson import ObjectId
 from datetime import datetime, timezone
 from pymongo import DESCENDING
 
@@ -40,7 +39,7 @@ class EventRepository(BaseRepository):
 
     async def list_by_owner(self, owner_id: str, limit: int, 
                             last_created_at: datetime | None = None,
-                            last_id: str | None = None) -> List[EventResponse]:
+                            last_id: str | None = None) -> list[EventResponse]:
         limit = min(limit, 100)
 
         query: dict = {"owner_id": owner_id}
