@@ -1,3 +1,4 @@
+from uuid import UUID
 from bson import ObjectId
 from datetime import datetime, timezone
 from pymongo import DESCENDING
@@ -12,23 +13,22 @@ class EventRepository(BaseRepository):
 
     async def create_event(
             self, event_data: EventCreate,
-            owner_id: str) -> EventResponse:
+            user_id: UUID) -> EventResponse:
         event_data = {
             "title": event_data.title,
             "description": event_data.description,
-            "owner_id": to_object_id(owner_id),
+            "owner_id": str(user_id),
             "created_at": datetime.now(timezone.utc),
-            "schema_version": 2, # for future migrations
+            "schema_version": 3, # for future migrations
         }
 
         result = await self.collection.insert_one(event_data)
         event_data["_id"] = result.inserted_id
-
         return self._to_response(event_data)
 
-    async def count_created_after(self, owner_id: str, after: datetime) -> int:
+    async def count_created_after(self,owner_id: str, after: datetime) -> int:
         return await self.collection.count_documents({
-            "owner_id": to_object_id(owner_id),
+            "owner_id": owner_id,
             "created_at": {"$gte": after},
         })
 
@@ -40,15 +40,19 @@ class EventRepository(BaseRepository):
 
     async def list_by_owner(self, owner_id: str, limit: int, 
                             last_created_at: datetime | None = None,
-                            last_id: str | None = None,):
-        query = {"owner_id": to_object_id(owner_id)}
+                            last_id: str | None = None) -> List[EventResponse]:
+        limit = min(limit, 100)
+
+        query: dict = {"owner_id": owner_id}
 
         if last_created_at and last_id:
+            oid = to_object_id(last_id)
+
             query["$or"] = [
                 {"created_at": {"$lt": last_created_at}},
                 {
                     "created_at": last_created_at,
-                    "_id": {"$lt": ObjectId(last_id)},
+                    "_id": {"$lt": oid},
                 },
             ]
 
@@ -69,12 +73,17 @@ class EventRepository(BaseRepository):
         )
         return result.deleted_count == 1
 
-    async def update(self, event_id: str, update_data: EventUpdate):
-        await self.collection.update_one(
+    async def update(self, event_id: str, update_data: EventUpdate) -> EventResponse | None:
+        result = await self.collection.update_one(
             {"_id": to_object_id(event_id)},
             {"$set": update_data.model_dump(exclude_unset=True)},
         )
+        if result.matched_count == 0:
+            return None
+
         return await self.get_by_id(event_id)
+
+        
 
     @staticmethod
     def _to_response(doc: dict) -> EventResponse:

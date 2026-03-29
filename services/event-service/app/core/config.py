@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     MONGO_URI: str
     DB_NAME: str
 
+    #JWT
+    SECRET_KEY: str
+    ALGORITHM: str
+
     # Business rules
     MAX_EVENTS_PER_HOUR: int = 5
 
@@ -22,7 +26,7 @@ class Settings(BaseSettings):
     REDIS_MAX_CONNECTIONS: int = 50
     REDIS_SOCKET_TIMEOUT: int = 5
     REDIS_SOCKET_CONNECT_TIMEOUT: int = 5
-    
+
     # Cache TTL
     CACHE_DEFAULT_TTL: int = 300
     CACHE_EVENT_TTL: int = 600

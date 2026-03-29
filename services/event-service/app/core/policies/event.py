@@ -1,4 +1,4 @@
-from app.schemas.events import UserContext
+from shared import UserContext
 
 
 class EventPolicy:

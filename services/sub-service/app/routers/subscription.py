@@ -16,7 +16,7 @@ from app.clients.event_client import (
 logger = logging.getLogger(__name__)
 
 
-router = APIRouter(prefix="/events", tags=["subscriptions"])
+router = APIRouter(prefix="/sub", tags=["subscriptions"])
 
 
 def get_subscription_service(
