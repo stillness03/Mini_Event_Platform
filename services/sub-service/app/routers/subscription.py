@@ -1,10 +1,10 @@
 import logging
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
+from shared import UserContext
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.schemas.subcription import UserContext
 from app.service.sub_service import SubscriptionService
 from app.repositories.sub_repository import SubRepository
 from app.clients.event_client import (

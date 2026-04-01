@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from app.repositories.sub_repository import SubRepository
 from app.clients.event_client import EventClient, EventServiceUnavailable
 
+from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class SubscriptionService:
         self.repo = repo
         self.event_client = event_client
 
-    async def subscribe(self, event_id: str, user_id: str) -> dict:
+    async def subscribe(self, event_id: str, user_id: UUID) -> dict:
         try:
             event = await self.event_client.get_event(event_id)
         except EventServiceUnavailable:
@@ -53,7 +54,7 @@ class SubscriptionService:
         return {"message": "Subscribed successfully"}
     
 
-    async def unsubscribe(self, event_id: str, user_id: str):
+    async def unsubscribe(self, event_id: str, user_id: UUID):
         subscription = self.repo.get_by_event_and_user(event_id, user_id)
         if not subscription:
             raise HTTPException(
@@ -67,7 +68,7 @@ class SubscriptionService:
         return {"message": "Unsubscribed successfully"}
     
 
-    async def list_user_subscriptions(self, user_id: str, 
+    async def list_user_subscriptions(self, user_id: UUID,
                                       page: int, page_size: int) -> dict:
         offset = (page - 1) * page_size
         subscriptions = self.repo.list_user_sub(user_id, offset, page_size)

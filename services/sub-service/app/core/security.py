@@ -1,10 +1,10 @@
 from fastapi import Header, HTTPException, status
-from app.schemas.subcription import UserContext
-
+from shared import UserContext
+from uuid import UUID
 
 def get_current_user(
-        x_user_id: str | None = Header(None),
-        x_user_role: str | None = Header("user"),
+        x_user_id: UUID | None = Header(None),
+        x_user_role: str = Header("user"),
 ) -> UserContext:
     if not x_user_id:
         raise HTTPException(
@@ -13,7 +13,7 @@ def get_current_user(
         )
 
     return UserContext(
-        user_id=x_user_id or "mock-user-id",  # for tests
+        user_id=x_user_id,
         role=x_user_role,
     )
 

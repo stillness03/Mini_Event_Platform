@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 from app.models.subscription import Subscription
 from .base import BaseRepository
@@ -9,7 +10,7 @@ class SubRepository(BaseRepository):
         super().__init__(db)
 
 
-    def create(self, event_id: str, user_id: str) -> Subscription: 
+    def create(self, event_id: str, user_id: UUID) -> Subscription:
         subscription = Subscription(
             event_id=event_id,
             user_id=user_id,
@@ -18,7 +19,7 @@ class SubRepository(BaseRepository):
         return subscription
 
 
-    def get_by_event_and_user(self, event_id: str, user_id: str) -> Subscription | None:
+    def get_by_event_and_user(self, event_id: str, user_id: UUID) -> Subscription | None:
         return (
             self.db.query(Subscription)
             .filter(
@@ -29,7 +30,7 @@ class SubRepository(BaseRepository):
         )
 
 
-    def list_user_sub(self, user_id: str, offset: int, limit: int
+    def list_user_sub(self, user_id: UUID, offset: int, limit: int
                       ) -> list[Subscription]:
         return (
         self.db.query(Subscription)
@@ -45,7 +46,7 @@ class SubRepository(BaseRepository):
         self.db.delete(subscription)
 
 
-    def count_by_user(self, user_id: str) -> int:
+    def count_by_user(self, user_id: UUID) -> int:
         return (
             self.db.query(Subscription)
             .filter(Subscription.user_id == user_id)

@@ -1,3 +1,4 @@
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -8,7 +9,7 @@ from app.main import app
 from app.core.database import Base, get_db
 from app.core.security import get_current_user
 from app.clients.event_client import get_event_client
-from app.schemas.subcription import UserContext
+from shared import UserContext
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 
@@ -46,12 +47,15 @@ def db_session():
     finally:
         session.close()
 
+@pytest.fixture
+def user_id():
+    return uuid.uuid4()
 
 # AUTH OVERRIDE
 @pytest.fixture()
-def override_auth():
+def override_auth(user_id):
     async def _fake_user():
-        return UserContext(user_id="test-user-id", role="user")
+        return UserContext(user_id=user_id, role="user")
 
     app.dependency_overrides[get_current_user] = _fake_user
     yield
