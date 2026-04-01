@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.schemas.events import EventCreate, EventListResponse, EventResponse, EventUpdate
 from app.core.security import event_creation_rate_limit
-from app.core.dependencies import get_event_service, get_current_user
+from app.core.dependencies import get_event_service
+from app.core.security import get_current_user
 from app.service.event_service import EventService
 from shared import UserContext
 

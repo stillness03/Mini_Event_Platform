@@ -1,12 +1,12 @@
 import pytest
-from bson import ObjectId
+from uuid import uuid4
 from datetime import datetime, timezone, timedelta
 
 from app.schemas.events import EventCreate
 
 @pytest.mark.asyncio
 async def test_create_and_get_event(event_repo):
-    owner_id = str(ObjectId())
+    owner_id = uuid4()
     event_in = EventCreate(title="Test Event", description="Test Description")
 
 
@@ -25,7 +25,8 @@ async def test_create_and_get_event(event_repo):
 
 @pytest.mark.asyncio
 async def test_list_events_sorted_desc(event_repo):
-    owner_id = str(ObjectId())
+    owner_id = uuid4()
+    print(f"\nDEBUG: Searching for owner_id: {owner_id} (type: {type(owner_id)})")
 
     await event_repo.create_event(
         EventCreate(title="Old", description="1"),
@@ -38,14 +39,14 @@ async def test_list_events_sorted_desc(event_repo):
     )
 
     events = await event_repo.list_by_owner(owner_id, limit=10)
-
+    print(f"DEBUG: Found events: {len(events)}")
     assert events[0].title == "New"
     assert events[1].title == "Old"
 
 
 @pytest.mark.asyncio
 async def test_count_created_after(event_repo):
-    owner_id = str(ObjectId())
+    owner_id = uuid4()
 
     now = datetime.now(timezone.utc)
 

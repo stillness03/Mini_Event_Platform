@@ -54,6 +54,9 @@ jobs:
             - name: Set PYTHONPATH for sub-service
               run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/services/sub-service" >> $GITHUB_ENV
 
+            - name: Install shared library
+              run: pip install -e ./shared
+
             - name: Run Alembic migrations
               working-directory: services/sub-service
               env:

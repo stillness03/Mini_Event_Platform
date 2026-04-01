@@ -23,6 +23,7 @@ async def connect_to_mongo() -> None:
         minPoolSize=20,
         serverSelectionTimeoutMS=5000,
         read_preference=ReadPreference.SECONDARY_PREFERRED,
+        uuidRepresentation="standard",
     )
     mongo_db.db = mongo_db.client[settings.DB_NAME]
 

@@ -16,7 +16,7 @@ class EventRepository(BaseRepository):
         event_data = {
             "title": event_data.title,
             "description": event_data.description,
-            "owner_id": str(user_id),
+            "owner_id": user_id,
             "created_at": datetime.now(timezone.utc),
             "schema_version": 3, # for future migrations
         }
@@ -26,8 +26,9 @@ class EventRepository(BaseRepository):
         return self._to_response(event_data)
 
     async def count_created_after(self,owner_id: str, after: datetime) -> int:
+        search_id = UUID(owner_id) if isinstance(owner_id, str) else owner_id
         return await self.collection.count_documents({
-            "owner_id": owner_id,
+            "owner_id": search_id,
             "created_at": {"$gte": after},
         })
 
@@ -37,12 +38,13 @@ class EventRepository(BaseRepository):
         )
         return self._to_response(doc) if doc else None
 
-    async def list_by_owner(self, owner_id: str, limit: int, 
+    async def list_by_owner(self, owner_id: UUID, limit: int,
                             last_created_at: datetime | None = None,
                             last_id: str | None = None) -> list[EventResponse]:
+        search_id = UUID(owner_id) if isinstance(owner_id, str) else owner_id
         limit = min(limit, 100)
 
-        query: dict = {"owner_id": owner_id}
+        query: dict = {"owner_id": search_id}
 
         if last_created_at and last_id:
             oid = to_object_id(last_id)
@@ -87,6 +89,10 @@ class EventRepository(BaseRepository):
     @staticmethod
     def _to_response(doc: dict) -> EventResponse:
         data = doc.copy()
-        data["id"] = str(data.pop("_id"))
-        data["owner_id"] = str(data["owner_id"])
+        if "_id" in data:
+            data["id"] = str(data.pop("_id"))
+
+        if "owner_id" in data:
+            data["owner_id"] = str(data["owner_id"])
+
         return EventResponse.model_validate(data)

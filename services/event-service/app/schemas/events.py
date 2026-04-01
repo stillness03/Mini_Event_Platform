@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
-
+from uuid import UUID
 
 class EventBase(BaseModel):
     title: str
@@ -18,7 +18,7 @@ class EventUpdate(BaseModel):
 
 class EventResponse(EventBase):
     id: str
-    owner_id: str
+    owner_id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
     schema_version: int

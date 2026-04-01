@@ -7,7 +7,7 @@ from shared import UserContext
 
 @pytest.mark.asyncio
 async def test_update_event_permission_denied(event_repo, event_service):
-    owner_id = str(ObjectId())
+    owner_id = uuid4()
     other_user = UserContext(
         user_id=str(uuid4()),
         role="user"
@@ -27,7 +27,7 @@ async def test_update_event_permission_denied(event_repo, event_service):
 
 @pytest.mark.asyncio
 async def test_delete_event_permission_denied(event_repo, event_service):
-    owner_id = str(ObjectId())
+    owner_id = uuid4()
 
     other_user = UserContext(
         user_id=str(uuid4()),
@@ -44,7 +44,7 @@ async def test_delete_event_permission_denied(event_repo, event_service):
 
 @pytest.mark.asyncio
 async def test_admin_can_modify_any_event(event_repo, event_service):
-    owner_id = str(uuid4())
+    owner_id = uuid4()
 
     admin = UserContext(
         user_id=str(uuid4()),
@@ -67,7 +67,7 @@ async def test_admin_can_modify_any_event(event_repo, event_service):
 
 @pytest.mark.asyncio
 async def test_update_event_partial(event_repo, event_service):
-    owner_id = str(uuid4())
+    owner_id = uuid4()
 
     user = UserContext(user_id=owner_id, role="user")
 

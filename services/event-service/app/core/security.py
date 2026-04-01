@@ -38,7 +38,7 @@ async def event_creation_rate_limit(
     cache: CacheService = Depends(get_cache),
     user: UserContext = Depends(get_current_user),
 ):
-    key = f"rate_limit:event_create:{user.owner_id}"
+    key = f"rate_limit:event_create:{user.user_id}"
     
     count = await cache.incr_with_ttl(key, 60)
 

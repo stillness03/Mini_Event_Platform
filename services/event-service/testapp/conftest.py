@@ -1,4 +1,3 @@
-from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
@@ -10,44 +9,44 @@ import pytest_asyncio
 from unittest.mock import AsyncMock
 from app.cache.dep_cache import get_cache
 
-import os
-from dotenv import load_dotenv
-
 from app.service.event_service import EventService
-from app.core.dependencies import get_event_repo, get_current_user
-from shared.schemas import UserContext
+from app.core.dependencies import get_event_repo
+from app.core.security import get_current_user
+from shared import UserContext
 from app.repositories.event import EventRepository
 from app.main import app
+from app.core.config import Settings
 
-load_dotenv()
+settings = Settings()
 
 
 #fixtures for user contexts
 @pytest.fixture
 def user():
     return UserContext(
-        owner_id=str(ObjectId()),
+        user_id=str(uuid4()),
         role="user",
     )
 
 @pytest.fixture
 def admin():
     return UserContext(
-        owner_id=str(ObjectId()),
+        user_id=str(uuid4()),
         role="admin",
     )
 
 
 @pytest_asyncio.fixture
 async def mongo_client():
-    client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
+    client = AsyncIOMotorClient(
+        settings.MONGO_URI,
+        uuidRepresentation="standard")
     yield client
     client.close()
 
-
 @pytest_asyncio.fixture
 async def mongo_test_db(mongo_client):
-    db = mongo_client["test_db"]
+    db = mongo_client["test_db_fresh"]
     yield db
     await db.drop_collection("events")
 
