@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     STRIPE_SUCCESS_URL: str
     STRIPE_CANCEL_URL: str
-    
+
     @computed_field
     @property
     def DATABASE_URL_SYNC(self) -> str:

@@ -56,7 +56,7 @@ class PaymentRepository(BaseRepository):
         query = select(Payment).where(Payment.id == payment_id)
         result = await self.db.execute(query)
         db_payment = result.scalars().first()
-        
+
         if db_payment:
             db_payment.stripe_id = stripe_id
             await self.flush()
@@ -68,7 +68,7 @@ class PaymentRepository(BaseRepository):
         query = select(Payment).where(Payment.id == payment_id)
         result = await self.db.execute(query)
         db_payment = result.scalars().first()
-        
+
         if db_payment:
             db_payment.status = status
             await self.flush()
@@ -101,7 +101,7 @@ class PaymentRepository(BaseRepository):
         query = select(func.count()).select_from(Payment).where(Payment.user_id == user_id)
         result = await self.db.execute(query)
         return result.scalar() or 0
-    
+
     async def update_after_stripe(
         self,
         payment_id: UUID,
