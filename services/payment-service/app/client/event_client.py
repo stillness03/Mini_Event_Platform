@@ -5,7 +5,7 @@ from fastapi import Depends
 import asyncio
 import logging
 
-from app.clients.deps import get_http_client
+from app.client.deps import get_http_client
 from app.core.config import get_settings
 
 
@@ -21,7 +21,7 @@ class EventServiceUnavailable(Exception):
 
 class EventClient:
 
-    def __init__(self, http_client: httpx.AsyncClient = Depends(get_http_client)):
+    def __init__(self, http_client: httpx.AsyncClient):
         self.client = http_client
         self.settings = get_settings()
         self.base_url = self.settings.EVENTS_BASE_URL

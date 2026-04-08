@@ -12,17 +12,17 @@ class Settings(BaseSettings):
     )
 
     PROJECT_NAME: str = "payment-service"
-    DOMAIN: str = "payment-service.io"
+    # DOMAIN: str = "payment-service.io"
 
-    STRIPE_SECRET_KEY: str
-    STRIPE_PUBLIC_KEY: str
-    STRIPE_WEBHOOK_SECRET: str
+    # STRIPE_SECRET_KEY: str
+    # STRIPE_PUBLIC_KEY: str
+    # STRIPE_WEBHOOK_SECRET: str
 
     DEFAULT_PAYMENT_PROVIDER: str = 'stripe'
 
     DATABASE_URL: str
 
-    EVENT_SERVICE_URL: str
+    EVENTS_BASE_URL: str
 
 @lru_cache
 def get_settings() -> Settings:

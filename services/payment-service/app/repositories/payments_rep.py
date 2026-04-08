@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import List, Optional
+from sqlalchemy import exists, and_
 
-from app.models.subscription import Payment
+from app.models.payments import Payment
 from app.schemas.payments import PaymentRequest, PaymentResponse
 from .base import BaseRepository
 
@@ -12,18 +13,18 @@ class PaymentRepository(BaseRepository):
         super().__init__(db)
 
     def create(self, payment: PaymentRequest) -> Payment:
-        data = PaymentRequest(
+        data = Payment(
             first_name=payment.first_name,
             last_name=payment.last_name,
             email=payment.email,
             phone_number=payment.phone_number,
-            event_id=payment.event,
+            event_id=payment.event_id,
             user_id=payment.user_id,
             amount=payment.amount,
         )
         self.db.add(data)
-        self.commit()
-        return self.refresh(data)
+        self.flush()
+        return data
 
 
     def get_by_event_and_user(self, event_id: str, user_id: UUID) -> Optional[Payment]:
@@ -49,8 +50,7 @@ class PaymentRepository(BaseRepository):
         db_payment = self.db.query(Payment).filter(Payment.id == payment_id).first()
         if db_payment:
             db_payment.status = status
-
-            self.commit()
+            self.flush()
             self.refresh(db_payment)
         return db_payment
 
@@ -66,10 +66,11 @@ class PaymentRepository(BaseRepository):
 
     def exists(self, event_id: str, user_id: UUID) -> bool:
         return self.db.query(
-            self.db.query(Payment).filter(
+            exists().where(and_(
                 Payment.event_id == event_id,
                 Payment.user_id == user_id
-            ).exists()
+            )
+            )
         ).scalar()
 
     def count_by_user(self, user_id: UUID) -> int:

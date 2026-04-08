@@ -1,9 +1,10 @@
 import logging
 from uuid import UUID
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 
 from app.repositories.payments_rep import PaymentRepository
-from app.clients.event_client import EventClient, EventServiceUnavailable
+from app.client.event_client import EventClient, EventServiceUnavailable
 from app.schemas.payments import PaymentRequest
 
 logger = logging.getLogger(__name__)
@@ -39,19 +40,35 @@ class PaymentService:
                 detail="You cannot subscribe to your own event"
             )
 
-        existing = self.repo.get_by_event_and_user(data.event_id, data.user_id)
-        if existing:
-            if existing.status == "success":
-                return {"message": "Already subscribed and paid"}
-            return {"message": "Payment pending", "payment_id": existing.id}
-
         try:
             pay = self.repo.create(data)
+            self.repo.commit()
+
             return {
                 "message": "Payment record created",
                 "payment_id": pay.id,
                 "amount": pay.amount
             }
+        except IntegrityError:
+            self.repo.rollback()
+
+            existing = self.repo.get_by_event_and_user(
+                data.event_id, data.user_id
+            )
+
+            if existing:
+                if existing.status == "success":
+                    return {"message": "Already subscribed and paid"}
+                return {
+                    "message": "Payment pending",
+                    "payment_id": existing.id
+                }
+
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "Payment already exists"
+            )
+
         except Exception as e:
             logger.error(
                 "payment_creation_failed error=%s",

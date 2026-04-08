@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-from app.models.payment import PaymentStatus
+from app.models.payments import PaymentStatus
 
 
 class PaymentRequest(BaseModel):
@@ -20,6 +20,10 @@ class PaymentRequest(BaseModel):
 
 class PaymentResponse(PaymentRequest):
     id: uuid.UUID
+    first_name: str
+    last_name: str
+    email: str
+    phone_number: str | None = None
     status: str
     ordering_at: datetime
     updated_at: datetime
