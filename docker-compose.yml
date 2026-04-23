@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # --- INFRASTRUCTURE (DATABASES) ---
+  db-postgres:
+    image: postgres:15
+    container_name: db-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: main_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-mongo:
+    image: mongo:7
+    container_name: db-mongo
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-redis:
+    image: redis:7
+    container_name: db-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Microservices ---
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    container_name: user-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/main_db
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: services/payment-service/Dockerfile
+    container_name: payment-service
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/main_db
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+
+  event-service:
+    build:
+      context: .
+      dockerfile: services/event-service/Dockerfile
+    container_name: event-service
+    environment:
+      - MONGO_URI=mongodb://db-mongo:27017
+      - REDIS_HOST=db-redis
+      - REDIS_PORT=6379
+    depends_on:
+      db-mongo:
+        condition: service_healthy
+      db-redis:
+        condition: service_healthy
+
+  sub-service:
+    build:
+      context: .
+      dockerfile: services/sub-service/Dockerfile
+    container_name: sub-service
+    environment:
+      - SUB_DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/main_db
+      - EVENT_SERVICE_URL=http://event-service:8000
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: gateway
+    ports:
+      - "8080:8000"
+    environment:
+      - USER_SERVICE_URL=http://user-service:8001
+      - PAYMENT_SERVICE_URL=http://payment-service:8003
+      - EVENT_SERVICE_URL=http://event-service:8000
+      - SUB_SERVICE_URL=http://sub-service:8002
+    depends_on:
+      - user-service
+      - payment-service
+      - event-service
+      - sub-service
+
+networks:
+  default:
+    name: event-platform-network
