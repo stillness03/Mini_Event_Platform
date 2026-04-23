@@ -10,6 +10,7 @@ from app.core.database import Base
 
 class PaymentStatus(str, enum.Enum):
     PENDING = "pending"
+    REQUIRES_PAYMENT = "requires_payment"
     SUCCESS = "success"
     FAILED = "failed"
 
@@ -35,6 +36,9 @@ class Payment(Base):
     currency = Column(String(3), server_default="UAH", nullable=False)
 
     status = Column(String, default=PaymentStatus.PENDING, nullable=False)
+
+    stripe_id = Column(String(255), unique=True, index=True, nullable=True)
+    checkout_url = Column(String(1030), nullable=True)
 
     ordering_at = Column(
         DateTime(timezone=True),

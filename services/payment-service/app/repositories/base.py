@@ -1,19 +1,19 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class BaseRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def commit(self):
-        self.db.commit()
+    async def commit(self):
+        await self.db.commit()
 
-    def refresh(self, instance):
-        self.db.refresh(instance)
+    async def refresh(self, instance):
+        await self.db.refresh(instance)
         return instance
-    
-    def flush(self):
-        self.db.flush()
 
-    def rollback(self):
-        self.db.rollback()
+    async def flush(self):
+        await self.db.flush()
+
+    async def rollback(self):
+        await self.db.rollback()

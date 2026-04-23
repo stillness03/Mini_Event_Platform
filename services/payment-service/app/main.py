@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.client.base import create_http_client
 from app.core.logging import setup_logging
 from app.routers.payments import router as payment_router
-
+from app.webhooks import stripe as stripe_webhook
 
 setup_logging()
 
@@ -24,6 +24,7 @@ app = FastAPI(title="Payment Service",
               )
 
 app.include_router(payment_router)
+app.include_router(stripe_webhook.router)
 
 
 # ---- Health Checks ----
