@@ -10,3 +10,9 @@ ignore = [
     "W291",
     "W293",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migration/env.py" = ["E402", "F401"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
