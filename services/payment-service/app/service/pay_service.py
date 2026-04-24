@@ -33,84 +33,63 @@ class PaymentService:
         self.stripe_gateway = stripe_gateway
 
     async def create_payment(self, data: PaymentRequest) -> dict:
+        event = await self._fetch_event(data)
+        self._validate_event(event, data.user_id)
+
+        if existing := await self.repo.get_by_event_and_user(data.event_id, data.user_id):
+            return self._existing_payment_response(existing)
+
+        pay = await self._create_payment_record(data)
+        checkout_session = await self._create_stripe_session(pay)
+        return await self._finalize_payment(pay, checkout_session)
+
+
+    async def _fetch_event(self, data: PaymentRequest) -> dict:
         try:
-            event = await asyncio.wait_for(
+            return await asyncio.wait_for(
                 self.event_client.get_event(data.event_id),
                 timeout=EVENT_TIMEOUT_SEC,
             )
-
         except asyncio.TimeoutError:
-            logger.warning(
-                "event_service_timeout user_id=%s event_id=%s",
-                data.user_id, data.event_id,
-            )
-
-            raise HTTPException(
-                status.HTTP_503_SERVICE_UNAVAILABLE,
-                "Event service timeout",
-            )
-
+            logger.warning("event_service_timeout user_id=%s event_id=%s", data.user_id, data.event_id)
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Event service timeout")
         except EventServiceUnavailable:
-            logger.warning(
-                "event_service_unavailable user_id=%s event_id=%s",
-                data.user_id, data.event_id
-            )
-            raise HTTPException(
-                status.HTTP_503_SERVICE_UNAVAILABLE,
-                "Event service unavailable"
-            )
+            logger.warning("event_service_unavailable user_id=%s event_id=%s", data.user_id, data.event_id)
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Event service unavailable")
 
+
+    def _validate_event(self, event: dict | None, user_id: UUID) -> None:
         if not event:
-            raise HTTPException(
-                status.HTTP_404_NOT_FOUND,
-                "Event not found"
-            )
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+        if event.get("owner_id") == str(user_id):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You cannot subscribe to your own event")
 
-        if event.get("owner_id") == str(data.user_id):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                detail="You cannot subscribe to your own event"
-            )
 
-        existing = await self.repo.get_by_event_and_user(
-            data.event_id, data.user_id
-        )
-        if existing:
-            if existing.status == PaymentStatus.SUCCESS:
-                return {
-                    "message": "Already paid",
-                    "payment_id": existing.id,
-                }
+    def _existing_payment_response(self, existing) -> dict:
+        if existing.status == PaymentStatus.SUCCESS:
+            return {"message": "Already paid", "payment_id": existing.id}
+        return {
+            "message": "Payment already initiated",
+            "payment_id": existing.id,
+            "checkout_url": existing.checkout_url,
+            "status": existing.status,
+        }
 
-            return {
-                "message": "Payment already initiated",
-                "payment_id": existing.id,
-                "checkout_url": existing.checkout_url,
-                "status": existing.status,
-            }
 
+    async def _create_payment_record(self, data: PaymentRequest):
         try:
             pay = await self.repo.create(data)
             await self.repo.commit()
+            return pay
         except IntegrityError:
             await self.repo.rollback()
-
-            existing = await self.repo.get_by_event_and_user(
-                data.event_id, data.user_id
-            )
-
+            existing = await self.repo.get_by_event_and_user(data.event_id, data.user_id)
             if existing:
-                return {
-                    "message": "Payment already initiated",
-                    "payment_id": existing.id,
-                    "checkout_url": existing.checkout_url,
-                    "status": existing.status,
-                }
+                return self._existing_payment_response(existing)  # type: ignore[return-value]
+            raise HTTPException(status.HTTP_409_CONFLICT, "Payment already exists")
 
-            raise HTTPException(
-                status.HTTP_409_CONFLICT,
-                "Payment already exists",
-            )
+
+    async def _create_stripe_session(self, pay):
         try:
             func = partial(
                 self.stripe_gateway.create_checkout_session,
@@ -119,29 +98,21 @@ class PaymentService:
                 payment_id=str(pay.id),
                 email=pay.email,
             )
-            checkout_session = await asyncio.wait_for(
+            return await asyncio.wait_for(
                 asyncio.get_running_loop().run_in_executor(None, func),
                 timeout=STRIPE_TIMEOUT_SEC,
             )
-
         except Exception as e:
             is_timeout = isinstance(e, asyncio.TimeoutError)
-            if is_timeout:
-                logger.warning("stripe_timeout payment_id=%s", pay.id)
-            else:
-                logger.exception("stripe_error payment_id=%s", pay.id)
-
-            try:
-                await self.repo.update_status(pay.id, PaymentStatus.FAILED)
-                await self.repo.commit()
-            except Exception:
-                logger.exception("failed_to_update_status payment_id=%s", pay.id)
-
+            logger.warning("stripe_timeout payment_id=%s", pay.id) if is_timeout else logger.exception("stripe_error payment_id=%s", pay.id)
+            await self._safe_update_status(pay.id, PaymentStatus.FAILED)
             raise HTTPException(
                 status.HTTP_503_SERVICE_UNAVAILABLE if is_timeout else status.HTTP_502_BAD_GATEWAY,
                 "Payment provider timeout" if is_timeout else "Payment provider error",
             )
 
+
+    async def _finalize_payment(self, pay, checkout_session) -> dict:
         try:
             await self.repo.update_after_stripe(
                 payment_id=pay.id,
@@ -152,21 +123,22 @@ class PaymentService:
             await self.repo.commit()
         except Exception:
             logger.exception("failed_to_update_after_stripe payment_id=%s", pay.id)
-            try:
-                await self.repo.update_status(pay.id, PaymentStatus.FAILED)
-                await self.repo.commit()
-            except Exception:
-                logger.exception("failed_to_update_status payment_id=%s", pay.id)
-            raise HTTPException(
-                status.HTTP_500_INTERNAL_SERVER_ERROR,
-                "Failed to finalize payment",
-            )
+            await self._safe_update_status(pay.id, PaymentStatus.FAILED)
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to finalize payment")
 
         return {
             "message": "Payment created",
             "payment_id": pay.id,
             "checkout_url": checkout_session.url,
         }
+
+
+    async def _safe_update_status(self, payment_id, status: PaymentStatus) -> None:
+        try:
+            await self.repo.update_status(payment_id, status)
+            await self.repo.commit()
+        except Exception:
+            logger.exception("failed_to_update_status payment_id=%s", payment_id)
 
 
 

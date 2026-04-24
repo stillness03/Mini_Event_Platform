@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy import select, and_, func, exists
 
 from app.models.payments import Payment, PaymentStatus
-from app.schemas.payments import PaymentRequest, PaymentResponse
+from app.schemas.payments import PaymentRequest
 from .base import BaseRepository
 
 

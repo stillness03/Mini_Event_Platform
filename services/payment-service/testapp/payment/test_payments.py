@@ -15,7 +15,7 @@ class TestCreatePayment:
     async def test_success(self, service, mock_deps):
         user_id = uuid4()
         req = PaymentRequest(
-            user_id=uuid4(), event_id=VALID_EVENT_ID,
+            user_id=user_id, event_id=VALID_EVENT_ID,
             amount=10, currency="USD", email="e@e.com",
             first_name="John", last_name="Doe",
         )

@@ -1,4 +1,3 @@
-from sqlalchemy import engine_from_config
 from logging.config import fileConfig
 from pathlib import Path
 import sys
@@ -10,8 +9,8 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(BASE_DIR))
 
 from app.core.database import Base
+from app.models.payments import Payment
 from app.core.config import get_settings
-from app.models.payments import Payment # noqa: E402
 
 settings = get_settings()
 db_url = settings.DATABASE_URL_SYNC
