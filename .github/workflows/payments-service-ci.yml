@@ -89,4 +89,3 @@ jobs:
 
       - name: Run pytest
         run: pytest --tb=short -q --asyncio-mode=auto
-  
