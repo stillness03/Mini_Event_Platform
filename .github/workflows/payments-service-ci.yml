@@ -40,6 +40,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
 
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/payment_test
+      DATABASE_URL_SYNC: postgresql+psycopg2://test:test@localhost:5432/payment_test
+      STRIPE_SECRET_KEY: sk_test_fake
+      STRIPE_PUBLIC_KEY: pk_test_fake
+      STRIPE_WEBHOOK_SECRET: whsec_fake
+      STRIPE_SUCCESS_URL: https://example.com/success
+      STRIPE_CANCEL_URL: https://example.com/cancel
+      EVENTS_BASE_URL: http://localhost:8001
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -68,18 +78,15 @@ jobs:
           cache: pip
           cache-dependency-path: ${{ env.SERVICE_PATH }}/requirements.txt
 
+      - name: Install shared package
+        run: pip install -e ../../shared
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Run migrations
         run: alembic upgrade head
-        env:
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/payment_test
-          DATABASE_URL_SYNC: postgresql+psycopg2://test:test@localhost:5432/payment_test
 
       - name: Run pytest
         run: pytest --tb=short -q --asyncio-mode=auto
-        env:
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/payment_test
-          DATABASE_URL_SYNC: postgresql+psycopg2://test:test@localhost:5432/payment_test
-          SECRET_KEY: test-secret-key
+  

@@ -3,6 +3,8 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 from fastapi import HTTPException
+import unittest.mock as mock
+
 from app.models.payments import PaymentStatus
 from app.schemas.payments import PaymentRequest
 
@@ -61,16 +63,25 @@ class TestCreatePayment:
         mock_deps["repo"].update_status = AsyncMock()
         mock_deps["repo"].commit = AsyncMock()
 
-        mock_deps["stripe_gateway"].create_checkout_session.side_effect = asyncio.TimeoutError()
-
         req = PaymentRequest(
             user_id=uuid4(), event_id=VALID_EVENT_ID,
             amount=10, currency="USD", email="e@e.com",
             first_name="John", last_name="Doe",
         )
 
-        with pytest.raises(HTTPException) as exc:
-            await service.create_payment(req)
+        original_wait_for = asyncio.wait_for
+        call_count = 0
+
+        async def fake_wait_for(coro, timeout):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return await original_wait_for(coro, timeout)
+            raise asyncio.TimeoutError()
+
+        with mock.patch("app.service.pay_service.asyncio.wait_for", side_effect=fake_wait_for):
+            with pytest.raises(HTTPException) as exc:
+                await service.create_payment(req)
 
         assert exc.value.status_code == 503
         mock_deps["repo"].update_status.assert_called_with(pay_mock.id, PaymentStatus.FAILED)
