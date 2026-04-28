@@ -13,7 +13,7 @@ from app.models.payments import Payment
 from app.core.config import get_settings
 
 settings = get_settings()
-db_url = settings.DATABASE_URL_SYNC
+db_url = settings.ALEMBIC_DATABASE_URL
 
 config = context.config
 config.set_main_option("sqlalchemy.url", db_url)

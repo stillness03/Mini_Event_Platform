@@ -1,10 +1,27 @@
+# Web framework
+fastapi==0.121.3
+uvicorn==0.38.0
+starlette==0.50.0
+
+# Database
+sqlalchemy==2.0.44
 alembic==1.18.1
-Faker==40.15.0
-fastapi==0.136.1
-httpx==0.28.1
-pydantic==2.13.3
-pydantic_settings==2.14.0
-pytest==9.0.2
-SQLAlchemy==2.0.49
-psycopg2-binary==2.9.10
+psycopg==3.3.2
+psycopg-binary==3.3.2
 asyncpg==0.30.0
+
+# Validation & Settings
+pydantic==2.12.4
+pydantic-settings==2.12.0
+pydantic-extra-types==2.10.6
+
+# Rate limiting
+slowapi==0.1.9
+limits==5.8.0
+
+# Testing & Development
+pytest==8.3.4
+pytest-asyncio==0.25.3
+httpx==0.28.1
+faker==36.1.1
+ruff==0.9.9

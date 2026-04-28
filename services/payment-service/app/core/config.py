@@ -30,8 +30,10 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def DATABASE_URL_SYNC(self) -> str:
-        return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+    def ALEMBIC_DATABASE_URL(self) -> str:
+        return self.DATABASE_URL.replace(
+            "postgresql+asyncpg", "postgresql+psycopg"
+        )
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,12 +1,19 @@
-#Core dependencies
-fastapi==0.136.1
-pydantic==2.13.3
-pydantic_settings==2.14.0
-SQLAlchemy==2.0.49
+# Web framework
+fastapi==0.121.3
+uvicorn==0.38.0
+starlette==0.50.0
+python-multipart==0.0.20
 
-#DB
+# Database
+sqlalchemy==2.0.44
+alembic==1.18.1
+psycopg==3.3.2
+psycopg-binary==3.3.2
 asyncpg==0.30.0
-psycopg2-binary==2.9.10
+
+# Validation & Settings
+pydantic==2.12.4
+pydantic-settings==2.12.0
 
 #Migrations and Tests
 alembic==1.18.1
@@ -17,7 +24,4 @@ httpx==0.28.1
 
 # Payment Gateway
 stripe==9.10.0
-
-#Local libraries
--e ../../shared
 

@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
+from pydantic import field_validator, computed_field
 from functools import lru_cache
 
 
@@ -20,6 +20,13 @@ class Settings(BaseSettings):
 
     RATE_LIMIT_PER_MINUTE: int = 60
     AUTH_RATE_LIMIT_PER_MINUTE: int = 10 # for auth
+
+    @computed_field
+    @property
+    def ALEMBIC_DATABASE_URL(self) -> str:
+        return self.DATABASE_URL.replace(
+            "postgresql+asyncpg", "postgresql+psycopg"
+        )
 
     @field_validator("SECRET_KEY")
     @classmethod
