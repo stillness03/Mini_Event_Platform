@@ -11,32 +11,38 @@ COPY services/user-service/requirements.txt .
 
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
+# --- Final Stage ---
 FROM python:3.12-slim
 
-WORKDIR /services/user-service
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-
+# Копіюємо встановлені залежності
 COPY --from=builder /install /usr/local
 
-COPY services/user-service/ .
-COPY shared /shared
+# Копіюємо вихідний код
+COPY services/user-service /app/services/user-service
+COPY shared /app/shared
 
+# Налаштовуємо скрипт запуску
 COPY services/user-service/deploy/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Налаштовуємо користувача безпеки
 RUN useradd -m appuser && \
-    chown -R appuser /services/user-service /shared
+    chown -R appuser:appuser /app
 
 USER appuser
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/services/user-service:/shared
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 EXPOSE 8001
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["uvicorn", "services.user_service.main:app", "--host", "0.0.0.0", "--port", "8001"]

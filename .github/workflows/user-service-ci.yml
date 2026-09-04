@@ -63,4 +63,4 @@ jobs:
         run: |
           docker build -t user-service:test \
             -f services/user-service/deploy/Dockerfile \
-            services/user-service/
+            .
