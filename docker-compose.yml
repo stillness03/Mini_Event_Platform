@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # --- INFRASTRUCTURE (DATABASES) ---
   db-postgres:
@@ -10,11 +8,12 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: main_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d main_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,11 +24,13 @@ services:
     command: ["mongod", "--quiet"]
     ports:
       - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
     logging:
       driver: "local"
       options:
-          max-size: "5m"
-          max-file: "3"
+        max-size: "5m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ ping: 1 })'"]
       interval: 10s
@@ -41,22 +42,26 @@ services:
     container_name: db-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # --- Microservices ---
+  # --- MICROSERVICES ---
   user-service:
     build:
       context: .
       dockerfile: services/user-service/deploy/Dockerfile
     container_name: user-service
+    env_file:
+      - services/user-service/.env
     environment:
-        - DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/users_db
-        - ALEMBIC_DATABASE_URL=postgresql+psycopg://postgres:password@db-postgres:5432/users_db
-        - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/users_db
+      - ALEMBIC_DATABASE_URL=postgresql+psycopg://postgres:password@db-postgres:5432/users_db
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       db-postgres:
         condition: service_healthy
@@ -66,10 +71,12 @@ services:
       context: .
       dockerfile: services/payment-service/deploy/Dockerfile
     container_name: payment-service
+    env_file:
+      - services/payment-service/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/payment_db
       - ALEMBIC_DATABASE_URL=postgresql+psycopg://postgres:password@db-postgres:5432/payment_db
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+#      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
     depends_on:
       db-postgres:
         condition: service_healthy
@@ -79,6 +86,8 @@ services:
       context: .
       dockerfile: services/event-service/deploy/Dockerfile
     container_name: event-service
+    env_file:
+      - services/event-service/.env
     environment:
       - MONGO_URI=mongodb://db-mongo:27017
       - REDIS_HOST=db-redis
@@ -94,6 +103,8 @@ services:
       context: .
       dockerfile: services/sub-service/deploy/Dockerfile
     container_name: sub-service
+    env_file:
+      - services/sub-service/.env
     environment:
       - SUB_DATABASE_URL=postgresql+asyncpg://postgres:password@db-postgres:5432/sub_db
       - ALEMBIC_DATABASE_URL=postgresql+psycopg://postgres:password@db-postgres:5432/sub_db
@@ -107,8 +118,10 @@ services:
       context: .
       dockerfile: services/gateway/deploy/Dockerfile
     container_name: gateway
+    env_file:
+      - services/gateway/.env
     ports:
-      - "8080:8000"
+      - "8080:8080"
     environment:
       - USER_SERVICE_URL=http://user-service:8001
       - PAYMENT_SERVICE_URL=http://payment-service:8003
@@ -120,6 +133,13 @@ services:
       - event-service
       - sub-service
 
+# --- TOP-LEVEL VOLUMES ---
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+
+# --- TOP-LEVEL NETWORKS ---
 networks:
   default:
     name: event-platform-network

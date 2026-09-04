@@ -1,0 +1,4 @@
+CREATE DATABASE payment_db;
+CREATE DATABASE events_db;
+CREATE DATABASE users_db;
+CREATE DATABASE sub_db;
